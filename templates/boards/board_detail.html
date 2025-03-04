@@ -22,6 +22,14 @@
 .tools-panel {
     position: fixed;
     top: 70px;
+
+<!-- WebSocket Test Panel -->
+<div id="ws-test-panel" style="position: fixed; bottom: 10px; right: 10px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; z-index: 1000; display: none;">
+    <h5>Test WebSocket</h5>
+    <p>Status: <span id="ws-status">Niepołączony</span></p>
+    <button id="ws-test-btn" class="btn btn-sm btn-primary">Test połączenia</button>
+</div>
+
     left: 10px;
     z-index: 1000;
     background-color: white;
@@ -186,6 +194,7 @@
     function initializeWebSocket() {
         // Tworzymy WebSocket - używamy względnej ścieżki
         const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/boards/${boardId}/`;
+        console.log('Connecting to WebSocket URL:', wsUrl);
         console.log('Trying to connect to WebSocket at:', wsUrl);
 
         socket = new WebSocket(wsUrl);
@@ -303,6 +312,14 @@
             if (canEdit && options.target) {
                 sendElementUpdate(options.target);
             }
+
+<script src="/static/js/websocket_test.js"></script>
+<script>
+document.getElementById('ws-test-btn').addEventListener('click', function() {
+    testWebSocket(boardId);
+});
+</script>
+
         });
 
         // Ładowanie elementów tablicy

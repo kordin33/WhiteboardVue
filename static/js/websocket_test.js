@@ -1,6 +1,8 @@
 
 // Funkcja testująca połączenie WebSocket
 function testWebSocket(boardId) {
+    // Pokaż panel testowy
+    document.getElementById('ws-test-panel').style.display = 'block';
     console.log('Testowanie połączenia WebSocket dla tablicy:', boardId);
     
     // Tworzymy WebSocket

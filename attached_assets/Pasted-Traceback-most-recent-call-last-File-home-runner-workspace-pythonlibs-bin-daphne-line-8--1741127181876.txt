@@ -1,0 +1,36 @@
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/bin/daphne", line 8, in <module>
+    sys.exit(CommandLineInterface.entrypoint())
+  File "/home/runner/workspace/.pythonlibs/lib/python3.10/site-packages/daphne/cli.py", line 171, in entrypoint
+    cls().run(sys.argv[1:])
+  File "/home/runner/workspace/.pythonlibs/lib/python3.10/site-packages/daphne/cli.py", line 233, in run
+    application = import_by_path(args.application)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.10/site-packages/daphne/utils.py", line 17, in import_by_path
+    target = importlib.import_module(module_path)
+  File "/nix/store/qlb1pg370bb647nj4dhc81y2jszvciz7-python3-3.10.16/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/runner/workspace/./whiteboard_project/asgi.py", line 6, in <module>
+    import boards.routing  # Import routing patterns
+  File "/home/runner/workspace/./boards/routing.py", line 2, in <module>
+    from . import consumers
+  File "/home/runner/workspace/./boards/consumers.py", line 4, in <module>
+    from .models import Board, Element, BoardPermission
+  File "/home/runner/workspace/./boards/models.py", line 2, in <module>
+    from django.contrib.auth.models import User
+  File "/home/runner/workspace/.pythonlibs/lib/python3.10/site-packages/django/contrib/auth/models.py", line 3, in <module>
+    from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+  File "/home/runner/workspace/.pythonlibs/lib/python3.10/site-packages/django/contrib/auth/base_user.py", line 57, in <module>
+    class AbstractBaseUser(models.Model):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.10/site-packages/django/db/models/base.py", line 129, in __new__
+    app_config = apps.get_containing_app_config(module)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.10/site-packages/django/apps/registry.py", line 260, in get_containing_app_config
+    self.check_apps_ready()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.10/site-packages/django/apps/registry.py", line 138, in check_apps_ready
+    raise AppRegistryNotReady("Apps aren't loaded yet.")
+django.core.exceptions.AppRegistryNotReady: Apps aren't loaded yet.
