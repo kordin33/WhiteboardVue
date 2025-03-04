@@ -1,19 +1,36 @@
-run = ["python", "manage.py", "runserver", "0.0.0.0:3000"]
+run = ["python", "manage.py", "runserver", "0.0.0.0:8080"]
 entrypoint = "manage.py"
 modules = ["python-3.10:v18-20230807-322e88b"]
-
 hidden = [".pythonlibs"]
 
 [nix]
 channel = "stable-24_05"
 
+[env]
+PYTHONPATH = "${PYTHONPATH}:${REPL_HOME}"
+DJANGO_SETTINGS_MODULE = "whiteboard_project.settings"
+
 [unitTest]
 language = "python3"
 
 [deployment]
-run = ["python", "manage.py", "runserver", "0.0.0.0:3000"]
+run = ["python", "manage.py", "runserver", "0.0.0.0:8080"]
 deploymentTarget = "gce"
 
 [[ports]]
 localPort = 3000
+externalPort = 3000
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
+
+[[ports]]
+localPort = 8001
+externalPort = 8001
+
+[[ports]]
+localPort = 8080
 externalPort = 80
+
+

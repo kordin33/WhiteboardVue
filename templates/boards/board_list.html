@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Moje tablice{% endblock %}
+
+{% block content %}
+<div class="col-12 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Moje tablice</h2>
+        <a href="{% url 'create_board' %}" class="btn btn-primary">Utwórz nową tablicę</a>
+    </div>
+
+    <h3 class="mt-4 mb-3">Własne tablice</h3>
+    {% if owned_boards %}
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for board in owned_boards %}
+                <div class="col">
+                    <div class="card h-100 board-card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ board.title }}</h5>
+                            <p class="card-text">Utworzono: {{ board.created_at|date:"j F Y, H:i" }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{% url 'board_detail' board.id %}" class="btn btn-sm btn-primary">Otwórz</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Nie masz jeszcze żadnych tablic. <a href="{% url 'create_board' %}">Utwórz pierwszą</a>.</p>
+    {% endif %}
+
+    <h3 class="mt-4 mb-3">Udostępnione tablice</h3>
+    {% if shared_boards %}
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for board in shared_boards %}
+                <div class="col">
+                    <div class="card h-100 board-card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ board.title }}</h5>
+                            <p class="card-text">Właściciel: {{ board.owner.username }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{% url 'board_detail' board.id %}" class="btn btn-sm btn-primary">Otwórz</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Nikt nie udostępnił Ci jeszcze żadnych tablic.</p>
+    {% endif %}
+</div>
+{% endblock %}

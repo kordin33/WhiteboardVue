@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Utwórz nową tablicę{% endblock %}
+
+{% block content %}
+<div class="col-12 col-md-6 mx-auto py-4">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="mb-0">Utwórz nową tablicę</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="title" class="form-label">Tytuł tablicy</label>
+                    <input type="text" class="form-control" id="title" name="title" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Utwórz</button>
+                <a href="{% url 'board_list' %}" class="btn btn-outline-secondary">Anuluj</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

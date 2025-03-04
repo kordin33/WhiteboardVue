@@ -1,0 +1,951 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ board.title }}{% endblock %}
+
+{% block extra_css %}
+.whiteboard-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 120px);
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    overflow: hidden;
+}
+#whiteboard-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: move;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+.tools-panel {
+    position: fixed;
+    top: 70px;
+    left: 10px;
+    z-index: 1000;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    padding: 10px;
+}
+.tools-panel .btn {
+    margin: 3px;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.element-properties {
+    position: fixed;
+    top: 70px;
+    right: 10px;
+    width: 250px;
+    z-index: 1000;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    padding: 15px;
+    display: none;
+}
+.read-only-indicator {
+    position: fixed;
+    top: 70px;
+    right: 10px;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+{% endblock %}
+
+{% block content %}
+<div class="col-12 p-0">
+    <div class="d-flex justify-content-between align-items-center p-2 bg-light border-bottom">
+        <h3 class="mb-0">{{ board.title }}</h3>
+        <div>
+            <button id="save-board" class="btn btn-success btn-sm">Zapisz</button>
+            <a href="{% url 'board_list' %}" class="btn btn-outline-secondary btn-sm">Powrót</a>
+        </div>
+    </div>
+
+    {% if not can_edit %}
+    <div class="read-only-indicator">
+        Tylko podgląd
+    </div>
+    {% endif %}
+
+    {% if can_edit %}
+    <div class="tools-panel">
+        <div class="btn-group-vertical">
+            <button class="btn btn-outline-secondary tool-btn" data-tool="select" title="Wybierz element">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cursor" viewBox="0 0 16 16">
+                    <path d="M14.082 2.182a.5.5 0 0 1 .103.557L8.528 15.467a.5.5 0 0 1-.917-.007L5.57 10.694.803 8.652a.5.5 0 0 1-.006-.916l12.728-5.657a.5.5 0 0 1 .556.103z"/>
+                </svg>
+            </button>
+            <button class="btn btn-outline-secondary tool-btn" data-tool="text" title="Dodaj tekst">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-fonts" viewBox="0 0 16 16">
+                    <path d="M12.258 3h-8.51l-.083 2.46h.479c.26-1.544.758-1.783 2.693-1.845l.424-.013v7.827c0 .663-.144.82-1.3.923v.52h4.082v-.52c-1.162-.103-1.306-.26-1.306-.923V3.602l.431.013c1.934.062 2.434.301 2.693 1.846h.479L12.258 3z"/>
+                </svg>
+            </button>
+            <button class="btn btn-outline-secondary tool-btn" data-tool="sticky" title="Dodaj notatkę">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sticky" viewBox="0 0 16 16">
+                    <path d="M2.5 1A1.5 1.5 0 0 0 1 2.5v11A1.5 1.5 0 0 0 2.5 15h6.086a1.5 1.5 0 0 0 1.06-.44l4.915-4.914A1.5 1.5 0 0 0 15 8.586V2.5A1.5 1.5 0 0 0 13.5 1h-11zM2 2.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V8H9.5A1.5 1.5 0 0 0 8 9.5V14H2.5a.5.5 0 0 1-.5-.5v-11zm7 11.293V9.5a.5.5 0 0 1 .5-.5h4.293L9 13.793z"/>
+                </svg>
+            </button>
+            <button class="btn btn-outline-secondary tool-btn" data-tool="shape" title="Dodaj kształt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-square" viewBox="0 0 16 16">
+                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+                </svg>
+            </button>
+            <button class="btn btn-outline-secondary tool-btn" data-tool="line" title="Dodaj linię">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-slash-lg" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M13.854 2.146a.5.5 0 0 1 0 .708l-11 11a.5.5 0 0 1-.708-.708l11-11a.5.5 0 0 1 .708 0Z"/>
+                </svg>
+            </button>
+            <button class="btn btn-outline-secondary tool-btn" data-tool="image" title="Dodaj obraz">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-image" viewBox="0 0 16 16">
+                    <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                    <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="element-properties" id="properties-panel">
+        <h5>Właściwości elementu</h5>
+        <div id="common-props">
+            <div class="mb-2">
+                <label for="element-z-index" class="form-label">Warstwa (Z-Index)</label>
+                <input type="number" class="form-control form-control-sm" id="element-z-index">
+            </div>
+            <button id="delete-element" class="btn btn-danger btn-sm mt-2">Usuń element</button>
+        </div>
+
+        <div id="text-props" style="display: none;">
+            <div class="mb-2">
+                <label for="text-content" class="form-label">Tekst</label>
+                <textarea class="form-control form-control-sm" id="text-content" rows="3"></textarea>
+            </div>
+            <div class="mb-2">
+                <label for="text-color" class="form-label">Kolor</label>
+                <input type="color" class="form-control form-control-sm" id="text-color">
+            </div>
+            <div class="mb-2">
+                <label for="text-size" class="form-label">Rozmiar</label>
+                <select class="form-select form-select-sm" id="text-size">
+                    <option value="12px">Mały (12px)</option>
+                    <option value="16px" selected>Średni (16px)</option>
+                    <option value="24px">Duży (24px)</option>
+                    <option value="32px">Bardzo duży (32px)</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="shape-props" style="display: none;">
+            <div class="mb-2">
+                <label for="shape-type" class="form-label">Kształt</label>
+                <select class="form-select form-select-sm" id="shape-type">
+                    <option value="rectangle">Prostokąt</option>
+                    <option value="circle">Koło</option>
+                    <option value="triangle">Trójkąt</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label for="shape-color" class="form-label">Kolor wypełnienia</label>
+                <input type="color" class="form-control form-control-sm" id="shape-color">
+            </div>
+            <div class="mb-2">
+                <label for="shape-border-color" class="form-label">Kolor obramowania</label>
+                <input type="color" class="form-control form-control-sm" id="shape-border-color">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="whiteboard-container">
+        <canvas id="whiteboard-canvas" width="3000" height="2000"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<script>
+    // Inicjalizacja danych
+    const boardId = {{ board.id }};
+    const canEdit = {% if can_edit %}true{% else %}false{% endif %};
+    let canvas;
+    let currentTool = 'select';
+    let socket;
+
+    // Inicjalizacja WebSocket
+    function initWebSocket() {
+        socket = new WebSocket(`ws://${window.location.host}/ws/boards/${boardId}/`);
+
+        socket.onopen = function(e) {
+            console.log('WebSocket connection established');
+        };
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            handleWebSocketMessage(data);
+        };
+
+        socket.onclose = function(e) {
+            console.log('WebSocket connection closed');
+            // Próba ponownego połączenia po 5 sekundach
+            setTimeout(initWebSocket, 5000);
+        };
+
+        socket.onerror = function(e) {
+            console.error('WebSocket error:', e);
+        };
+    }
+
+    // Obsługa wiadomości z WebSocket
+    function handleWebSocketMessage(data) {
+        switch(data.action) {
+            case 'create_element':
+                addElementFromData(data.element);
+                break;
+            case 'update_element':
+                updateElementFromData(data.element);
+                break;
+            case 'delete_element':
+                deleteElementById(data.element_id);
+                break;
+        }
+    }
+
+    // Inicjalizacja Canvas
+    function initCanvas() {
+        canvas = new fabric.Canvas('whiteboard-canvas', {
+            isDrawingMode: false,
+            selection: canEdit,
+            backgroundColor: 'white'
+        });
+
+        // Konfiguracja powiększania/pomniejszania i przesuwania
+        canvas.on('mouse:wheel', function(opt) {
+            const delta = opt.e.deltaY;
+            let zoom = canvas.getZoom();
+            zoom *= 0.999 ** delta;
+            if (zoom > 20) zoom = 20;
+            if (zoom < 0.1) zoom = 0.1;
+
+            canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+            opt.e.preventDefault();
+            opt.e.stopPropagation();
+        });
+
+        // Obsługa przesuwania płótna
+        canvas.on('mouse:down', function(opt) {
+            if (currentTool === 'select' && opt.e.altKey) {
+                this.isDragging = true;
+                this.selection = false;
+                this.lastPosX = opt.e.clientX;
+                this.lastPosY = opt.e.clientY;
+            }
+        });
+
+        canvas.on('mouse:move', function(opt) {
+            if (this.isDragging) {
+                const e = opt.e;
+                const vpt = this.viewportTransform;
+                vpt[4] += e.clientX - this.lastPosX;
+                vpt[5] += e.clientY - this.lastPosY;
+                this.requestRenderAll();
+                this.lastPosX = e.clientX;
+                this.lastPosY = e.clientY;
+            }
+        });
+
+        canvas.on('mouse:up', function() {
+            this.isDragging = false;
+            this.selection = canEdit;
+        });
+
+        // Obsługa zaznaczania elementów
+        canvas.on('selection:created', function(options) {
+            if (canEdit) {
+                showPropertiesPanel(options.selected[0]);
+            }
+        });
+
+        canvas.on('selection:updated', function(options) {
+            if (canEdit) {
+                showPropertiesPanel(options.selected[0]);
+            }
+        });
+
+        canvas.on('selection:cleared', function() {
+            hidePropertiesPanel();
+        });
+
+        // Obsługa modyfikacji obiektów
+        canvas.on('object:modified', function(options) {
+            if (canEdit && options.target) {
+                sendElementUpdate(options.target);
+            }
+        });
+
+        // Ładowanie elementów tablicy
+        loadBoardElements();
+    }
+
+    // Ładowanie elementów tablicy z serwera
+    function loadBoardElements() {
+        fetch(`/api/${boardId}/elements/`)
+            .then(response => response.json())
+            .then(elements => {
+                elements.forEach(element => {
+                    addElementFromData(element);
+                });
+            })
+            .catch(error => console.error('Error loading board elements:', error));
+    }
+
+    // Dodawanie elementu na podstawie danych
+    function addElementFromData(elementData) {
+        switch(elementData.element_type) {
+            case 'text':
+                addTextElement(elementData);
+                break;
+            case 'sticky':
+                addStickyNote(elementData);
+                break;
+            case 'shape':
+                addShapeElement(elementData);
+                break;
+            case 'line':
+                addLineElement(elementData);
+                break;
+            case 'image':
+                addImageElement(elementData);
+                break;
+        }
+    }
+
+    // Aktualizacja elementu na podstawie danych
+    function updateElementFromData(elementData) {
+        const objects = canvas.getObjects();
+        const element = objects.find(obj => obj.id === elementData.id);
+
+        if (element) {
+            // Aktualizacja wspólnych właściwości
+            element.set({
+                left: elementData.position_x,
+                top: elementData.position_y,
+                width: elementData.width,
+                height: elementData.height,
+                angle: elementData.rotation,
+                zIndex: elementData.z_index
+            });
+
+            // Aktualizacja specyficznych właściwości
+            if (elementData.element_type === 'text' && elementData.content) {
+                element.set('text', elementData.content);
+
+                if (elementData.properties && elementData.properties.color) {
+                    element.set('fill', elementData.properties.color);
+                }
+
+                if (elementData.properties && elementData.properties.fontSize) {
+                    element.set('fontSize', elementData.properties.fontSize);
+                }
+            }
+            else if (['sticky', 'shape'].includes(elementData.element_type) && elementData.properties) {
+                if (elementData.properties.fill) {
+                    element.set('fill', elementData.properties.fill);
+                }
+
+                if (elementData.properties.stroke) {
+                    element.set('stroke', elementData.properties.stroke);
+                }
+
+                if (elementData.element_type === 'sticky' && elementData.content) {
+                    // Aktualizacja tekstu w notatce
+                    const textObjects = element._objects.filter(obj => obj.type === 'text');
+                    if (textObjects.length > 0) {
+                        textObjects[0].set('text', elementData.content);
+                    }
+                }
+            }
+
+            canvas.renderAll();
+        }
+    }
+
+    // Usunięcie elementu po ID
+    function deleteElementById(elementId) {
+        const objects = canvas.getObjects();
+        const element = objects.find(obj => obj.id === elementId);
+
+        if (element) {
+            canvas.remove(element);
+            canvas.renderAll();
+        }
+    }
+
+    // Dodawanie tekstu
+    function addTextElement(data) {
+        const fontSize = data.properties?.fontSize || '16px';
+        const color = data.properties?.color || '#000000';
+
+        const textObj = new fabric.Textbox(data.content || 'Nowy tekst', {
+            id: data.id,
+            left: data.position_x || 100,
+            top: data.position_y || 100,
+            width: data.width || 200,
+            fontSize: fontSize,
+            fill: color,
+            fontFamily: 'Arial',
+            element_type: 'text',
+            selectable: canEdit
+        });
+
+        canvas.add(textObj);
+        canvas.renderAll();
+
+        // Jeśli to nowy element, wysyłamy informację do serwera
+        if (!data.id && canEdit) {
+            sendElementCreate(textObj);
+        }
+
+        return textObj;
+    }
+
+    // Dodawanie notatki
+    function addStickyNote(data) {
+        const color = data.properties?.fill || '#FFFF88';
+        const width = data.width || 200;
+        const height = data.height || 200;
+
+        const rect = new fabric.Rect({
+            width: width,
+            height: height,
+            fill: color,
+            rx: 10,
+            ry: 10
+        });
+
+        const text = new fabric.Textbox(data.content || 'Nowa notatka', {
+            width: width - 20,
+            fontSize: 16,
+            fill: '#000000',
+            fontFamily: 'Arial',
+            left: 10,
+            top: 10
+        });
+
+        const group = new fabric.Group([rect, text], {
+            id: data.id,
+            left: data.position_x || 100,
+            top: data.position_y || 100,
+            element_type: 'sticky',
+            selectable: canEdit
+        });
+
+        canvas.add(group);
+        canvas.renderAll();
+
+        // Jeśli to nowy element, wysyłamy informację do serwera
+        if (!data.id && canEdit) {
+            sendElementCreate(group);
+        }
+
+        return group;
+    }
+
+    // Dodawanie kształtu
+    function addShapeElement(data) {
+        const type = data.properties?.type || 'rectangle';
+        const fill = data.properties?.fill || '#3498db';
+        const stroke = data.properties?.stroke || '#2980b9';
+        let shape;
+
+        if (type === 'circle') {
+            shape = new fabric.Circle({
+                radius: data.width/2 || 50,
+                fill: fill,
+                stroke: stroke,
+                strokeWidth: 2
+            });
+        } else if (type === 'triangle') {
+            shape = new fabric.Triangle({
+                width: data.width || 100,
+                height: data.height || 100,
+                fill: fill,
+                stroke: stroke,
+                strokeWidth: 2
+            });
+        } else {
+            // Default: rectangle
+            shape = new fabric.Rect({
+                width: data.width || 100,
+                height: data.height || 100,
+                fill: fill,
+                stroke: stroke,
+                strokeWidth: 2,
+                rx: 5,
+                ry: 5
+            });
+        }
+
+        shape.set({
+            id: data.id,
+            left: data.position_x || 100,
+            top: data.position_y || 100,
+            element_type: 'shape',
+            selectable: canEdit
+        });
+
+        canvas.add(shape);
+        canvas.renderAll();
+
+        // Jeśli to nowy element, wysyłamy informację do serwera
+        if (!data.id && canEdit) {
+            sendElementCreate(shape);
+        }
+
+        return shape;
+    }
+
+    // Dodawanie linii
+    function addLineElement(data) {
+        const stroke = data.properties?.stroke || '#000000';
+        const strokeWidth = data.properties?.strokeWidth || 2;
+        const width = data.width || 100;
+
+        const line = new fabric.Line([0, 0, width, 0], {
+            id: data.id,
+            left: data.position_x || 100,
+            top: data.position_y || 100,
+            stroke: stroke,
+            strokeWidth: strokeWidth,
+            element_type: 'line',
+            selectable: canEdit
+        });
+
+        canvas.add(line);
+        canvas.renderAll();
+
+        // Jeśli to nowy element, wysyłamy informację do serwera
+        if (!data.id && canEdit) {
+            sendElementCreate(line);
+        }
+
+        return line;
+    }
+
+    // Dodawanie obrazu
+    function addImageElement(data) {
+        // To jest uproszczona implementacja, w pełnej wersji powinno być wczytywanie z URL
+        const imgElement = document.createElement('img');
+        imgElement.src = data.image || '/static/placeholder.png';
+
+        imgElement.onload = function() {
+            const imgInstance = new fabric.Image(imgElement, {
+                id: data.id,
+                left: data.position_x || 100,
+                top: data.position_y || 100,
+                scaleX: (data.width || 200) / imgElement.width,
+                scaleY: (data.height || 200) / imgElement.height,
+                element_type: 'image',
+                selectable: canEdit
+            });
+
+            canvas.add(imgInstance);
+            canvas.renderAll();
+
+            // Jeśli to nowy element, wysyłamy informację do serwera
+            if (!data.id && canEdit) {
+                sendElementCreate(imgInstance);
+            }
+        };
+    }
+
+    // Wysyłanie informacji o utworzeniu elementu
+    function sendElementCreate(obj) {
+        const elementData = {
+            element_type: obj.element_type,
+            content: obj.text || obj.type === 'group' ? obj._objects.find(o => o.type === 'textbox')?.text : null,
+            position_x: obj.left,
+            position_y: obj.top,
+            width: obj.width || (obj.radius ? obj.radius * 2 : 100),
+            height: obj.height || (obj.radius ? obj.radius * 2 : 100),
+            rotation: obj.angle || 0,
+            z_index: obj.zIndex || 0,
+            properties: {}
+        };
+
+        // Dodanie specyficznych właściwości
+        if (obj.element_type === 'text') {
+            elementData.properties.color = obj.fill;
+            elementData.properties.fontSize = obj.fontSize;
+        } else if (['shape', 'sticky'].includes(obj.element_type)) {
+            elementData.properties.fill = obj.fill || (obj._objects ? obj._objects[0].fill : '#FFFFFF');
+            elementData.properties.stroke = obj.stroke || '#000000';
+            if (obj.element_type === 'shape') {
+                elementData.properties.type = obj.type === 'circle' ? 'circle' : 
+                                            obj.type === 'triangle' ? 'triangle' : 'rectangle';
+            }
+        } else if (obj.element_type === 'line') {
+            elementData.properties.stroke = obj.stroke;
+            elementData.properties.strokeWidth = obj.strokeWidth;
+        }
+
+        // Wysłanie do API
+        fetch(`/api/${boardId}/elements/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(elementData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Aktualizacja ID obiektu
+            obj.set('id', data.id);
+
+            // Wysłanie do WebSocket
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    action: 'create_element',
+                    element: {
+                        ...elementData,
+                        id: data.id
+                    }
+                }));
+            }
+        })
+        .catch(error => console.error('Error creating element:', error));
+    }
+
+    // Wysyłanie informacji o aktualizacji elementu
+    function sendElementUpdate(obj) {
+        const elementData = {
+            id: obj.id,
+            element_type: obj.element_type,
+            position_x: obj.left,
+            position_y: obj.top,
+            width: obj.width || (obj.radius ? obj.radius * 2 : 100),
+            height: obj.height || (obj.radius ? obj.radius * 2 : 100),
+            rotation: obj.angle || 0,
+            z_index: obj.zIndex || 0,
+            properties: {}
+        };
+
+        // Dodanie tekstu dla elementów tekstowych
+        if (obj.element_type === 'text') {
+            elementData.content = obj.text;
+            elementData.properties.color = obj.fill;
+            elementData.properties.fontSize = obj.fontSize;
+        } else if (obj.element_type === 'sticky') {
+            const textObj = obj._objects.find(o => o.type === 'textbox');
+            if (textObj) {
+                elementData.content = textObj.text;
+            }
+            const rectObj = obj._objects.find(o => o.type === 'rect');
+            if (rectObj) {
+                elementData.properties.fill = rectObj.fill;
+            }
+        } else if (obj.element_type === 'shape') {
+            elementData.properties.fill = obj.fill;
+            elementData.properties.stroke = obj.stroke;
+            elementData.properties.type = obj.type === 'circle' ? 'circle' : 
+                                        obj.type === 'triangle' ? 'triangle' : 'rectangle';
+        } else if (obj.element_type === 'line') {
+            elementData.properties.stroke = obj.stroke;
+            elementData.properties.strokeWidth = obj.strokeWidth;
+        }
+
+        // Wysłanie do API
+        fetch(`/api/${boardId}/elements/${obj.id}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(elementData)
+        })
+        .then(() => {
+            // Wysłanie do WebSocket
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    action: 'update_element',
+                    element: elementData
+                }));
+            }
+        })
+        .catch(error => console.error('Error updating element:', error));
+    }
+
+    // Wysyłanie informacji o usunięciu elementu
+    function sendElementDelete(objId) {
+        // Wysłanie do API
+        fetch(`/api/${boardId}/elements/${objId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(() => {
+            // Wysłanie do WebSocket
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    action: 'delete_element',
+                    element_id: objId
+                }));
+            }
+        })
+        .catch(error => console.error('Error deleting element:', error));
+    }
+
+    // Pobranie wartości ciasteczka CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Pokazywanie panelu właściwości elementu
+    function showPropertiesPanel(obj) {
+        if (!obj) return;
+
+        const panel = document.getElementById('properties-panel');
+        const textProps = document.getElementById('text-props');
+        const shapeProps = document.getElementById('shape-props');
+
+        // Wspólne właściwości
+        document.getElementById('element-z-index').value = obj.zIndex || 0;
+
+        // Ukrycie wszystkich paneli specyficznych
+        textProps.style.display = 'none';
+        shapeProps.style.display = 'none';
+
+        // Pokazanie odpowiedniego panelu
+        if (obj.element_type === 'text') {
+            textProps.style.display = 'block';
+            document.getElementById('text-content').value = obj.text || '';
+            document.getElementById('text-color').value = obj.fill || '#000000';
+            document.getElementById('text-size').value = obj.fontSize || '16px';
+        } else if (obj.element_type === 'shape') {
+            shapeProps.style.display = 'block';
+            document.getElementById('shape-color').value = obj.fill || '#3498db';
+            document.getElementById('shape-border-color').value = obj.stroke || '#2980b9';
+
+            const shapeTypeSelect = document.getElementById('shape-type');
+            if (obj.type === 'circle') {
+                shapeTypeSelect.value = 'circle';
+            } else if (obj.type === 'triangle') {
+                shapeTypeSelect.value = 'triangle';
+            } else {
+                shapeTypeSelect.value = 'rectangle';
+            }
+        }
+
+        panel.style.display = 'block';
+    }
+
+    // Ukrywanie panelu właściwości
+    function hidePropertiesPanel() {
+        document.getElementById('properties-panel').style.display = 'none';
+    }
+
+    // Event listenery dla przycisków narzędzi
+    document.addEventListener('DOMContentLoaded', function() {
+        if (canEdit) {
+            // Inicjalizacja WebSocket
+            initWebSocket();
+
+            // Obsługa przycisków narzędzi
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentTool = this.dataset.tool;
+
+                    // Usunięcie aktywnej klasy z wszystkich przycisków
+                    document.querySelectorAll('.tool-btn').forEach(b => 
+                        b.classList.remove('active', 'btn-primary')
+                    );
+
+                    // Dodanie aktywnej klasy do klikniętego przycisku
+                    this.classList.add('active', 'btn-primary');
+
+                    // Włączenie/wyłączenie trybu rysowania
+                    canvas.isDrawingMode = currentTool === 'draw';
+
+                    // Jeśli wybrano narzędzie do tworzenia elementów, dodajemy nasłuchiwanie kliknięcia na płótnie
+                    if (['text', 'sticky', 'shape', 'line', 'image'].includes(currentTool)) {
+                        canvas.on('mouse:down', createElementHandler);
+                    } else {
+                        canvas.off('mouse:down', createElementHandler);
+                    }
+                });
+            });
+
+            // Obsługa kliknięcia na płótnie dla tworzenia elementów
+            function createElementHandler(opt) {
+                if (opt.target || canvas.isDragging) return;
+
+                const pointer = canvas.getPointer(opt.e);
+
+                switch(currentTool) {
+                    case 'text':
+                        addTextElement({
+                            position_x: pointer.x,
+                            position_y: pointer.y
+                        });
+                        break;
+                    case 'sticky':
+                        addStickyNote({
+                            position_x: pointer.x,
+                            position_y: pointer.y
+                        });
+                        break;
+                    case 'shape':
+                        addShapeElement({
+                            position_x: pointer.x,
+                            position_y: pointer.y
+                        });
+                        break;
+                    case 'line':
+                        addLineElement({
+                            position_x: pointer.x,
+                            position_y: pointer.y
+                        });
+                        break;
+                    case 'image':
+                        // Tutaj możemy dodać wybór pliku
+                        // W uproszczonej wersji dodajemy placeholder
+                        addImageElement({
+                            position_x: pointer.x,
+                            position_y: pointer.y
+                        });
+                        break;
+                }
+
+                // Wracamy do narzędzia zaznaczania po utworzeniu elementu
+                document.querySelector('[data-tool="select"]').click();
+            }
+
+            // Obsługa zmian właściwości elementu
+            document.getElementById('element-z-index').addEventListener('change', function() {
+                const obj = canvas.getActiveObject();
+                if (obj) {
+                    obj.set('zIndex', parseInt(this.value));
+                    sendElementUpdate(obj);
+                    canvas.renderAll();
+                }
+            });
+
+            document.getElementById('text-content').addEventListener('input', function() {
+                const obj = canvas.getActiveObject();
+                if (obj && obj.element_type === 'text') {
+                    obj.set('text', this.value);
+                    sendElementUpdate(obj);
+                    canvas.renderAll();
+                }
+            });
+
+            document.getElementById('text-color').addEventListener('input', function() {
+                const obj = canvas.getActiveObject();
+                if (obj && obj.element_type === 'text') {
+                    obj.set('fill', this.value);
+                    sendElementUpdate(obj);
+                    canvas.renderAll();
+                }
+            });
+
+            document.getElementById('text-size').addEventListener('change', function() {
+                const obj = canvas.getActiveObject();
+                if (obj && obj.element_type === 'text') {
+                    obj.set('fontSize', this.value);
+                    sendElementUpdate(obj);
+                    canvas.renderAll();
+                }
+            });
+
+            document.getElementById('shape-color').addEventListener('input', function() {
+                const obj = canvas.getActiveObject();
+                if (obj && obj.element_type === 'shape') {
+                    obj.set('fill', this.value);
+                    sendElementUpdate(obj);
+                    canvas.renderAll();
+                }
+            });
+
+            document.getElementById('shape-border-color').addEventListener('input', function() {
+                const obj = canvas.getActiveObject();
+                if (obj && obj.element_type === 'shape') {
+                    obj.set('stroke', this.value);
+                    sendElementUpdate(obj);
+                    canvas.renderAll();
+                }
+            });
+
+            document.getElementById('shape-type').addEventListener('change', function() {
+                const obj = canvas.getActiveObject();
+                if (obj && obj.element_type === 'shape') {
+                    // To byłaby pełna implementacja zmiany kształtu, ale jest dość złożona
+                    // w uproszczonej wersji możemy usunąć stary i utworzyć nowy
+                    const props = {
+                        position_x: obj.left,
+                        position_y: obj.top,
+                        width: obj.width,
+                        height: obj.height,
+                        properties: {
+                            type: this.value,
+                            fill: obj.fill,
+                            stroke: obj.stroke
+                        }
+                    };
+
+                    const objId = obj.id;
+                    canvas.remove(obj);
+
+                    if (objId) {
+                        sendElementDelete(objId);
+                    }
+
+                    addShapeElement(props);
+                }
+            });
+
+            document.getElementById('delete-element').addEventListener('click', function() {
+                const obj = canvas.getActiveObject();
+                if (obj) {
+                    const objId = obj.id;
+                    canvas.remove(obj);
+
+                    if (objId) {
+                        sendElementDelete(objId);
+                    }
+
+                    hidePropertiesPanel();
+                }
+            });
+
+            // Ustawienie domyślnego narzędzia
+            document.querySelector('[data-tool="select"]').click();
+        }
+
+        // Inicjalizacja Canvas
+        initCanvas();
+    });
+</script>
+{% endblock %}
