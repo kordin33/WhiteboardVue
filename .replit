@@ -14,7 +14,7 @@ DJANGO_SETTINGS_MODULE = "whiteboard_project.settings"
 language = "python3"
 
 [deployment]
-run = ["python", "manage.py", "runserver", "0.0.0.0:8080"]
+run = ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 whiteboard_project.asgi:application"]
 deploymentTarget = "gce"
 
 [[ports]]
@@ -32,5 +32,16 @@ externalPort = 8001
 [[ports]]
 localPort = 8080
 externalPort = 80
+
+[workflows]
+runButton = "Run"
+
+[[workflows.workflow]]
+name = "Run"
+author = 39823191
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "daphne -b 0.0.0.0 -p 8000 whiteboard_project.asgi:application"
 
 
