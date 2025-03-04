@@ -182,44 +182,56 @@
     let currentTool = 'select';
     let socket;
 
-    // Inicjalizacja WebSocket
-    function initWebSocket() {
-        socket = new WebSocket(`ws://${window.location.host}/ws/boards/${boardId}/`);
+    // Inicjalizacja WebSocketa
+    function initializeWebSocket() {
+        // Tworzymy WebSocket - używamy względnej ścieżki
+        const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/boards/${boardId}/`;
+        console.log('Trying to connect to WebSocket at:', wsUrl);
+
+        socket = new WebSocket(wsUrl);
 
         socket.onopen = function(e) {
-            console.log('WebSocket connection established');
+            console.log('WebSocket połączony');
         };
 
         socket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            handleWebSocketMessage(data);
+            console.log('Otrzymano wiadomość WebSocket:', data);
+
+            // Obsługa przychodzących zdarzeń
+            if (data.action === 'create_element') {
+                receiveCreateElement(data.element);
+            } else if (data.action === 'update_element') {
+                receiveUpdateElement(data.element);
+            } else if (data.action === 'delete_element') {
+                receiveDeleteElement(data.element_id);
+            }
         };
 
         socket.onclose = function(e) {
-            console.log('WebSocket connection closed');
+            console.log('WebSocket rozłączony, kod:', e.code, 'powód:', e.reason);
             // Próba ponownego połączenia po 5 sekundach
-            setTimeout(initWebSocket, 5000);
+            setTimeout(initializeWebSocket, 5000);
         };
 
         socket.onerror = function(e) {
-            console.error('WebSocket error:', e);
+            console.error('Błąd WebSocket:', e);
         };
     }
 
-    // Obsługa wiadomości z WebSocket
-    function handleWebSocketMessage(data) {
-        switch(data.action) {
-            case 'create_element':
-                addElementFromData(data.element);
-                break;
-            case 'update_element':
-                updateElementFromData(data.element);
-                break;
-            case 'delete_element':
-                deleteElementById(data.element_id);
-                break;
-        }
+    // Obsługa wiadomości z WebSocket -  funkcje receiveCreateElement, receiveUpdateElement, receiveDeleteElement  muszą być zdefiniowane
+    function receiveCreateElement(element) {
+        addElementFromData(element);
     }
+
+    function receiveUpdateElement(element) {
+        updateElementFromData(element);
+    }
+
+    function receiveDeleteElement(elementId) {
+        deleteElementById(elementId);
+    }
+
 
     // Inicjalizacja Canvas
     function initCanvas() {
@@ -771,7 +783,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         if (canEdit) {
             // Inicjalizacja WebSocket
-            initWebSocket();
+            initializeWebSocket();
 
             // Obsługa przycisków narzędzi
             document.querySelectorAll('.tool-btn').forEach(btn => {
