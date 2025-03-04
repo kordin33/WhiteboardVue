@@ -1,20 +1,21 @@
 import os
-from django.core.asgi import get_asgi_application
+import django
 
-# Ustawienie zmiennej środowiskowej przed jakimkolwiek importem Django
+# Set Django settings before anything else
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'whiteboard_project.settings')
 
-# Najpierw inicjalizujemy aplikację Django ASGI
-django_asgi_app = get_asgi_application()
+# Initialize Django
+django.setup()
 
-# Dopiero po inicjalizacji Django importujemy zależności Channels
+# Now import other dependencies
+from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
-import boards.routing  # Import routing patterns
+import boards.routing
 
-# Inicjalizacja aplikacji ASGI z odpowiednią kolejnością
+# Initialize application
 application = ProtocolTypeRouter({
-    "http": django_asgi_app,
+    "http": get_asgi_application(),
     "websocket": AuthMiddlewareStack(
         URLRouter(
             boards.routing.websocket_urlpatterns
