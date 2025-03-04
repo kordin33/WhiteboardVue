@@ -29,6 +29,7 @@ exposeLocalhost = true
 [[ports]]
 localPort = 8001
 externalPort = 8001
+exposeLocalhost = true
 
 [[ports]]
 localPort = 8080
@@ -43,6 +44,6 @@ author = 39823191
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "daphne -b 0.0.0.0 -p 8000 whiteboard_project.asgi:application"
+args = "daphne -b 0.0.0.0 -p 8001 whiteboard_project.asgi:application"
 
 
