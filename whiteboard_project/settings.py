@@ -19,7 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    #'channels',  # Dodajemy Django Channels
+    'channels',  # Dodajemy Django Channels
     'boards',    # Nasza aplikacja tablic
 ]
 
