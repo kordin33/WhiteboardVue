@@ -22,8 +22,6 @@
 .tools-panel {
     position: fixed;
     top: 70px;
-
-
     left: 10px;
     z-index: 1000;
     background-color: white;
@@ -62,6 +60,33 @@
     border-radius: 3px;
     font-weight: bold;
 }
+.pen-properties {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+}
+.grid-settings {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+}
+.active-tool {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+.brush-size-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 2px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+}
+.brush-size-btn.active {
+    border: 2px solid #0d6efd;
+}
 {% endblock %}
 
 {% block content %}
@@ -86,6 +111,11 @@
             <button class="btn btn-outline-secondary tool-btn" data-tool="select" title="Wybierz element">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cursor" viewBox="0 0 16 16">
                     <path d="M14.082 2.182a.5.5 0 0 1 .103.557L8.528 15.467a.5.5 0 0 1-.917-.007L5.57 10.694.803 8.652a.5.5 0 0 1-.006-.916l12.728-5.657a.5.5 0 0 1 .556.103z"/>
+                </svg>
+            </button>
+            <button class="btn btn-outline-secondary tool-btn" data-tool="pen" title="Rysuj odręcznie">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pen" viewBox="0 0 16 16">
+                    <path d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001z"/>
                 </svg>
             </button>
             <button class="btn btn-outline-secondary tool-btn" data-tool="text" title="Dodaj tekst">
@@ -114,6 +144,45 @@
                     <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
                 </svg>
             </button>
+        </div>
+
+        <!-- Właściwości ołówka/pióra -->
+        <div class="pen-properties" id="pen-properties">
+            <p class="mb-1 text-center">Rozmiar pióra:</p>
+            <div class="d-flex justify-content-center">
+                <div class="brush-size-btn" data-size="2" style="background-color: #000"></div>
+                <div class="brush-size-btn" data-size="5" style="background-color: #000"></div>
+                <div class="brush-size-btn active" data-size="10" style="background-color: #000"></div>
+                <div class="brush-size-btn" data-size="15" style="background-color: #000"></div>
+            </div>
+            <p class="mb-1 mt-2 text-center">Kolor:</p>
+            <div class="d-flex justify-content-center">
+                <input type="color" id="pen-color" value="#000000" class="form-control form-control-sm" style="width: 100px;">
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="pen-smoothing" checked>
+                <label class="form-check-label" for="pen-smoothing">
+                    Wygładzanie linii
+                </label>
+            </div>
+        </div>
+
+        <!-- Ustawienia siatki -->
+        <div class="grid-settings">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="show-grid" checked>
+                <label class="form-check-label" for="show-grid">
+                    Pokaż siatkę
+                </label>
+            </div>
+            <div class="mt-2">
+                <label for="grid-size" class="form-label">Rozmiar siatki:</label>
+                <select id="grid-size" class="form-select form-select-sm">
+                    <option value="10">Mała (10px)</option>
+                    <option value="20" selected>Średnia (20px)</option>
+                    <option value="40">Duża (40px)</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -171,11 +240,19 @@
     <div class="whiteboard-container">
         <canvas id="whiteboard-canvas" width="3000" height="2000"></canvas>
     </div>
+
+    <!-- WebSocket Test Panel -->
+    <div id="ws-test-panel" style="position: fixed; bottom: 10px; right: 10px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; z-index: 1000; display: none;">
+        <h5>Test WebSocket</h5>
+        <p>Status: <span id="ws-status">Niepołączony</span></p>
+        <button id="ws-test-btn" class="btn btn-sm btn-primary">Test połączenia</button>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<script src="/static/js/websocket_test.js"></script>
 <script>
     // Inicjalizacja danych
     const boardId = {{ board.id }};
@@ -183,161 +260,169 @@
     let canvas;
     let currentTool = 'select';
     let socket;
+    let isDrawing = false;
+    let startPoint;
+    let tempShape;
+    let penSize = 10;
+    let penColor = '#000000';
+    let penSmoothing = true;
+    let gridSize = 20;
+    let showGrid = true;
+    let gridLines = [];
 
+    // Inicjalizacja WebSocket połączenia
     function initializeWebSocket() {
-        // Create protocol based on page protocol
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws/boards/${boardId}/`;
-        console.log('Connecting to WebSocket URL:', wsUrl);
+        console.log('Łączenie z WebSocket URL:', wsUrl);
 
         try {
             socket = new WebSocket(wsUrl);
 
             socket.onopen = function(e) {
-                console.log('WebSocket connected successfully');
-                document.getElementById('ws-status').textContent = 'Connected';
-                document.getElementById('ws-status').style.color = 'green';
+                console.log('WebSocket połączony pomyślnie');
+                const statusElement = document.getElementById('ws-status');
+                if (statusElement) {
+                    statusElement.textContent = 'Połączony';
+                    statusElement.style.color = 'green';
+                }
             };
 
             socket.onmessage = function(e) {
                 try {
                     const data = JSON.parse(e.data);
-                    console.log('Received WebSocket message:', data);
+                    console.log('Otrzymano wiadomość WebSocket:', data);
 
-                    // Handle incoming events
+                    // Obsługa przychodzących zdarzeń
                     if (data.action === 'create_element') {
-                        receiveCreateElement(data.element);
+                        addElementFromData(data.element);
                     } else if (data.action === 'update_element') {
-                        receiveUpdateElement(data.element);
+                        updateElementFromData(data.element);
                     } else if (data.action === 'delete_element') {
-                        receiveDeleteElement(data.element_id);
+                        deleteElementById(data.element_id);
                     }
                 } catch (error) {
-                    console.error('Error processing WebSocket message:', error);
+                    console.error('Błąd przetwarzania wiadomości WebSocket:', error);
                 }
             };
 
             socket.onclose = function(e) {
-                console.log('WebSocket disconnected, code:', e.code, 'reason:', e.reason);
-                document.getElementById('ws-status').textContent = 'Disconnected (code: ' + e.code + ')';
-                document.getElementById('ws-status').style.color = 'red';
+                console.log('WebSocket rozłączony, kod:', e.code, 'powód:', e.reason);
+                const statusElement = document.getElementById('ws-status');
+                if (statusElement) {
+                    statusElement.textContent = 'Rozłączony (kod: ' + e.code + ')';
+                    statusElement.style.color = 'red';
+                }
 
-                // Try to reconnect after 5 seconds
+                // Próba ponownego połączenia po 5 sekundach
                 setTimeout(initializeWebSocket, 5000);
             };
 
             socket.onerror = function(e) {
-                console.error('WebSocket error:', e);
-                document.getElementById('ws-status').textContent = 'Connection error';
-                document.getElementById('ws-status').style.color = 'red';
+                console.error('Błąd WebSocket:', e);
+                const statusElement = document.getElementById('ws-status');
+                if (statusElement) {
+                    statusElement.textContent = 'Błąd połączenia';
+                    statusElement.style.color = 'red';
+                }
             };
         } catch (error) {
-            console.error('Error creating WebSocket:', error);
+            console.error('Błąd tworzenia WebSocket:', error);
         }
     }
-    // Obsługa wiadomości z WebSocket -  funkcje receiveCreateElement, receiveUpdateElement, receiveDeleteElement  muszą być zdefiniowane
-    function receiveCreateElement(element) {
-        addElementFromData(element);
-    }
 
-    function receiveUpdateElement(element) {
-        updateElementFromData(element);
-    }
-
-    function receiveDeleteElement(elementId) {
-        deleteElementById(elementId);
-    }
-
-
-    // Modified canvas initialization
+    // Inicjalizacja Canvas
     function initCanvas() {
         try {
-            // Create canvas with proper configuration
+            // Utworzenie canvas z odpowiednią konfiguracją
             canvas = new fabric.Canvas('whiteboard-canvas', {
                 isDrawingMode: false,
                 selection: canEdit,
                 backgroundColor: 'white'
             });
 
-            console.log('Canvas initialized successfully');
+            console.log('Canvas zainicjalizowany pomyślnie');
 
-            // Load elements after canvas initialization
-            loadBoardElements();
+            // Tworzenie siatki
+            createGrid();
 
-            // Setup event listeners for canvas
+            // Konfiguracja narzędzia do rysowania odręcznego
+            configureFreeDrawing();
+
+            // Konfiguracja obsługi zdarzeń canvas
             setupCanvasEventListeners();
+
+            // Ładowanie elementów z serwera
+            loadBoardElements();
         } catch (error) {
-            console.error('Error initializing canvas:', error);
+            console.error('Błąd inicjalizacji canvas:', error);
         }
     }
-    function setupCanvasEventListeners() {
-        // Zoom handling
-        canvas.on('mouse:wheel', function(opt) {
-            const delta = opt.e.deltaY;
-            let zoom = canvas.getZoom();
-            zoom *= 0.999 ** delta;
-            if (zoom > 20) zoom = 20;
-            if (zoom < 0.1) zoom = 0.1;
 
-            canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-            opt.e.preventDefault();
-            opt.e.stopPropagation();
+    // Tworzenie siatki
+    function createGrid() {
+        // Usuń istniejące linie siatki
+        gridLines.forEach(line => {
+            canvas.remove(line);
+        });
+        gridLines = [];
+
+        if (!showGrid) return;
+
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Tworzenie linii pionowych
+        for (let i = 0; i < width; i += gridSize) {
+            const line = new fabric.Line([i, 0, i, height], {
+                stroke: '#ddd',
+                selectable: false,
+                strokeWidth: i % (gridSize * 5) === 0 ? 1 : 0.5,
+                element_type: 'grid'
+            });
+            gridLines.push(line);
+            canvas.add(line);
+        }
+
+        // Tworzenie linii poziomych
+        for (let i = 0; i < height; i += gridSize) {
+            const line = new fabric.Line([0, i, width, i], {
+                stroke: '#ddd',
+                selectable: false,
+                strokeWidth: i % (gridSize * 5) === 0 ? 1 : 0.5,
+                element_type: 'grid'
+            });
+            gridLines.push(line);
+            canvas.add(line);
+        }
+
+        // Przesuń siatkę na spód
+        gridLines.forEach(line => {
+            line.moveTo(0);
         });
 
-        // Pan handling
-        canvas.on('mouse:down', function(opt) {
-            if (currentTool === 'select' && opt.e.altKey) {
-                this.isDragging = true;
-                this.selection = false;
-                this.lastPosX = opt.e.clientX;
-                this.lastPosY = opt.e.clientY;
-            }
-        });
-
-        canvas.on('mouse:move', function(opt) {
-            if (this.isDragging) {
-                const e = opt.e;
-                const vpt = this.viewportTransform;
-                vpt[4] += e.clientX - this.lastPosX;
-                vpt[5] += e.clientY - this.lastPosY;
-                this.requestRenderAll();
-                this.lastPosX = e.clientX;
-                this.lastPosY = e.clientY;
-            }
-        });
-
-        canvas.on('mouse:up', function() {
-            this.isDragging = false;
-            this.selection = canEdit;
-        });
-
-        // Selection handling
-        canvas.on('selection:created', function(options) {
-            if (canEdit && options.selected && options.selected.length > 0) {
-                showPropertiesPanel(options.selected[0]);
-            }
-        });
-
-        canvas.on('selection:updated', function(options) {
-            if (canEdit && options.selected && options.selected.length > 0) {
-                showPropertiesPanel(options.selected[0]);
-            }
-        });
-
-        canvas.on('selection:cleared', function() {
-            hidePropertiesPanel();
-        });
-
-        // Object modification handling
-        canvas.on('object:modified', function(options) {
-            if (canEdit && options.target) {
-                console.log('Object modified:', options.target);
-                sendElementUpdate(options.target);
-            }
-        });
+        canvas.renderAll();
     }
 
-        // Konfiguracja powiększania/pomniejszania i przesuwania
+    // Konfiguracja rysowania odręcznego
+    function configureFreeDrawing() {
+        const brush = canvas.freeDrawingBrush;
+        brush.color = penColor;
+        brush.width = penSize;
+
+        // Włączenie wygładzania linii jeśli wybrane
+        if (penSmoothing) {
+            canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+            canvas.freeDrawingBrush.color = penColor;
+            canvas.freeDrawingBrush.width = penSize;
+            canvas.freeDrawingBrush.strokeLineCap = 'round';
+            canvas.freeDrawingBrush.strokeLineJoin = 'round';
+        }
+    }
+
+    // Konfiguracja obsługi zdarzeń canvas
+    function setupCanvasEventListeners() {
+        // Obsługa zoom
         canvas.on('mouse:wheel', function(opt) {
             const delta = opt.e.deltaY;
             let zoom = canvas.getZoom();
@@ -358,9 +443,72 @@
                 this.lastPosX = opt.e.clientX;
                 this.lastPosY = opt.e.clientY;
             }
+
+            // Obsługa rysowania kształtów przez przeciąganie
+            if (['shape', 'line'].includes(currentTool) && !opt.target && !this.isDragging) {
+                isDrawing = true;
+                startPoint = canvas.getPointer(opt.e);
+
+                if (currentTool === 'shape') {
+                    // Tworzenie tymczasowego kształtu
+                    const shapeType = document.getElementById('shape-type') ? document.getElementById('shape-type').value : 'rectangle';
+                    const fill = document.getElementById('shape-color') ? document.getElementById('shape-color').value : '#3498db';
+                    const stroke = document.getElementById('shape-border-color') ? document.getElementById('shape-border-color').value : '#2980b9';
+
+                    if (shapeType === 'circle') {
+                        tempShape = new fabric.Circle({
+                            left: startPoint.x,
+                            top: startPoint.y,
+                            radius: 1,
+                            fill: fill,
+                            stroke: stroke,
+                            strokeWidth: 2,
+                            selectable: false,
+                            originX: 'center',
+                            originY: 'center'
+                        });
+                    } else if (shapeType === 'triangle') {
+                        tempShape = new fabric.Triangle({
+                            left: startPoint.x,
+                            top: startPoint.y,
+                            width: 1,
+                            height: 1,
+                            fill: fill,
+                            stroke: stroke,
+                            strokeWidth: 2,
+                            selectable: false
+                        });
+                    } else {
+                        tempShape = new fabric.Rect({
+                            left: startPoint.x,
+                            top: startPoint.y,
+                            width: 1,
+                            height: 1,
+                            fill: fill,
+                            stroke: stroke,
+                            strokeWidth: 2,
+                            rx: 5,
+                            ry: 5,
+                            selectable: false
+                        });
+                    }
+                    canvas.add(tempShape);
+                }
+                else if (currentTool === 'line') {
+                    // Tworzenie tymczasowej linii
+                    const stroke = document.getElementById('pen-color') ? document.getElementById('pen-color').value : '#000000';
+                    tempShape = new fabric.Line([startPoint.x, startPoint.y, startPoint.x, startPoint.y], {
+                        stroke: stroke,
+                        strokeWidth: 2,
+                        selectable: false
+                    });
+                    canvas.add(tempShape);
+                }
+            }
         });
 
         canvas.on('mouse:move', function(opt) {
+            // Obsługa przeciągania płótna
             if (this.isDragging) {
                 const e = opt.e;
                 const vpt = this.viewportTransform;
@@ -370,22 +518,114 @@
                 this.lastPosX = e.clientX;
                 this.lastPosY = e.clientY;
             }
+
+            // Obsługa dynamicznego rysowania kształtu
+            if (isDrawing && tempShape) {
+                const pointer = canvas.getPointer(opt.e);
+
+                if (tempShape.type === 'circle') {
+                    // Obliczanie promienia koła
+                    const radius = Math.sqrt(
+                        Math.pow(pointer.x - startPoint.x, 2) + 
+                        Math.pow(pointer.y - startPoint.y, 2)
+                    ) / 2;
+
+                    const centerX = (startPoint.x + pointer.x) / 2;
+                    const centerY = (startPoint.y + pointer.y) / 2;
+
+                    tempShape.set({
+                        radius: radius,
+                        left: centerX,
+                        top: centerY
+                    });
+                }
+                else if (tempShape.type === 'triangle' || tempShape.type === 'rect') {
+                    // Ustawianie wymiarów prostokąta lub trójkąta
+                    const width = Math.abs(pointer.x - startPoint.x);
+                    const height = Math.abs(pointer.y - startPoint.y);
+                    const left = pointer.x < startPoint.x ? pointer.x : startPoint.x;
+                    const top = pointer.y < startPoint.y ? pointer.y : startPoint.y;
+
+                    tempShape.set({
+                        left: left,
+                        top: top,
+                        width: width,
+                        height: height
+                    });
+                }
+                else if (tempShape.type === 'line') {
+                    // Aktualizacja końca linii
+                    tempShape.set({
+                        x2: pointer.x,
+                        y2: pointer.y
+                    });
+                }
+
+                canvas.renderAll();
+            }
         });
 
-        canvas.on('mouse:up', function() {
+        canvas.on('mouse:up', function(opt) {
+            // Zakończenie przeciągania płótna
             this.isDragging = false;
             this.selection = canEdit;
+
+            // Zakończenie rysowania kształtu
+            if (isDrawing && tempShape) {
+                isDrawing = false;
+                const pointer = canvas.getPointer(opt.e);
+
+                // Sprawdzenie czy kształt ma minimalny rozmiar
+                const minSize = 5;
+                const width = Math.abs(pointer.x - startPoint.x);
+                const height = Math.abs(pointer.y - startPoint.y);
+
+                if (width < minSize && height < minSize) {
+                    // Kształt za mały, usuń go
+                    canvas.remove(tempShape);
+                } else {
+                    // Kształt odpowiedniej wielkości, dodaj go jako element
+                    tempShape.selectable = true;
+                    tempShape.element_type = currentTool === 'line' ? 'line' : 'shape';
+
+                    // Dodanie właściwości specyficznych dla kształtów
+                    if (tempShape.element_type === 'shape') {
+                        const shapeType = tempShape.type === 'circle' ? 'circle' : 
+                                          tempShape.type === 'triangle' ? 'triangle' : 'rectangle';
+                        tempShape.properties = {
+                            type: shapeType,
+                            fill: tempShape.fill,
+                            stroke: tempShape.stroke
+                        };
+                    } else if (tempShape.element_type === 'line') {
+                        tempShape.properties = {
+                            stroke: tempShape.stroke,
+                            strokeWidth: tempShape.strokeWidth
+                        };
+                    }
+
+                    // Wysłanie informacji o utworzeniu elementu
+                    sendElementCreate(tempShape);
+                }
+
+                tempShape = null;
+
+                // Powrót do narzędzia wyboru po narysowaniu kształtu
+                if (['shape', 'line'].includes(currentTool)) {
+                    document.querySelector('[data-tool="select"]')?.click();
+                }
+            }
         });
 
-        // Obsługa zaznaczania elementów
+        // Obsługa zaznaczenia elementów
         canvas.on('selection:created', function(options) {
-            if (canEdit) {
+            if (canEdit && options.selected && options.selected.length > 0) {
                 showPropertiesPanel(options.selected[0]);
             }
         });
 
         canvas.on('selection:updated', function(options) {
-            if (canEdit) {
+            if (canEdit && options.selected && options.selected.length > 0) {
                 showPropertiesPanel(options.selected[0]);
             }
         });
@@ -397,20 +637,35 @@
         // Obsługa modyfikacji obiektów
         canvas.on('object:modified', function(options) {
             if (canEdit && options.target) {
+                console.log('Obiekt zmodyfikowany:', options.target);
                 sendElementUpdate(options.target);
             }
-
-<script src="/static/js/websocket_test.js"></script>
-<script>
-document.getElementById('ws-test-btn').addEventListener('click', function() {
-    testWebSocket(boardId);
-});
-</script>
-
         });
 
-        // Ładowanie elementów tablicy
-        loadBoardElements();
+        // Obsługa zakończenia rysowania odręcznego
+        canvas.on('path:created', function(e) {
+            if (e.path && canEdit) {
+                e.path.element_type = 'path';
+                e.path.properties = {
+                    stroke: e.path.stroke,
+                    strokeWidth: e.path.strokeWidth
+                };
+                sendElementCreate(e.path);
+            }
+        });
+    }
+
+    // Funkcje obsługi WebSocket
+    function receiveCreateElement(element) {
+        addElementFromData(element);
+    }
+
+    function receiveUpdateElement(element) {
+        updateElementFromData(element);
+    }
+
+    function receiveDeleteElement(elementId) {
+        deleteElementById(elementId);
     }
 
     // Ładowanie elementów tablicy z serwera
@@ -422,7 +677,7 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
                     addElementFromData(element);
                 });
             })
-            .catch(error => console.error('Error loading board elements:', error));
+            .catch(error => console.error('Błąd ładowania elementów tablicy:', error));
     }
 
     // Dodawanie elementu na podstawie danych
@@ -443,7 +698,31 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
             case 'image':
                 addImageElement(elementData);
                 break;
+            case 'path':
+                addPathElement(elementData);
+                break;
         }
+    }
+
+    // Dodawanie elementu ścieżki (rysowanie odręczne)
+    function addPathElement(data) {
+        if (!data.path) return null;
+
+        const pathObj = new fabric.Path(data.path, {
+            id: data.id,
+            left: data.position_x || 0,
+            top: data.position_y || 0,
+            stroke: data.properties?.stroke || '#000000',
+            strokeWidth: data.properties?.strokeWidth || 5,
+            fill: null,
+            element_type: 'path',
+            selectable: canEdit
+        });
+
+        canvas.add(pathObj);
+        canvas.renderAll();
+
+        return pathObj;
     }
 
     // Aktualizacja elementu na podstawie danych
@@ -490,6 +769,13 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
                         textObjects[0].set('text', elementData.content);
                     }
                 }
+            } else if (elementData.element_type === 'path' && elementData.properties) {
+                if (elementData.properties.stroke) {
+                    element.set('stroke', elementData.properties.stroke);
+                }
+                if (elementData.properties.strokeWidth) {
+                    element.set('strokeWidth', elementData.properties.strokeWidth);
+                }
             }
 
             canvas.renderAll();
@@ -526,6 +812,12 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
 
         canvas.add(textObj);
         canvas.renderAll();
+
+        // Automatyczne otwarcie edycji tekstu po utworzeniu
+        if (!data.id && canEdit) {
+            textObj.enterEditing();
+            textObj.hiddenTextarea.focus();
+        }
 
         // Jeśli to nowy element, wysyłamy informację do serwera
         if (!data.id && canEdit) {
@@ -687,9 +979,9 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
 
     // Wysyłanie informacji o utworzeniu elementu
     function sendElementCreate(obj) {
-        const elementData = {
+        let elementData = {
             element_type: obj.element_type,
-            content: obj.text || obj.type === 'group' ? obj._objects.find(o => o.type === 'textbox')?.text : null,
+            content: obj.text || (obj.type === 'group' ? obj._objects.find(o => o.type === 'textbox')?.text : null),
             position_x: obj.left,
             position_y: obj.top,
             width: obj.width || (obj.radius ? obj.radius * 2 : 100),
@@ -713,6 +1005,11 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
         } else if (obj.element_type === 'line') {
             elementData.properties.stroke = obj.stroke;
             elementData.properties.strokeWidth = obj.strokeWidth;
+        } else if (obj.element_type === 'path') {
+            // Zapisanie ścieżki do rysowania odręcznego
+            elementData.properties.stroke = obj.stroke;
+            elementData.properties.strokeWidth = obj.strokeWidth;
+            elementData.path = obj.path;
         }
 
         // Wysłanie do API
@@ -740,7 +1037,7 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
                 }));
             }
         })
-        .catch(error => console.error('Error creating element:', error));
+        .catch(error => console.error('Błąd tworzenia elementu:', error));
     }
 
     // Wysyłanie informacji o aktualizacji elementu
@@ -779,6 +1076,10 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
         } else if (obj.element_type === 'line') {
             elementData.properties.stroke = obj.stroke;
             elementData.properties.strokeWidth = obj.strokeWidth;
+        } else if (obj.element_type === 'path') {
+            elementData.properties.stroke = obj.stroke;
+            elementData.properties.strokeWidth = obj.strokeWidth;
+            elementData.path = obj.path;
         }
 
         // Wysłanie do API
@@ -799,7 +1100,7 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
                 }));
             }
         })
-        .catch(error => console.error('Error updating element:', error));
+        .catch(error => console.error('Błąd aktualizacji elementu:', error));
     }
 
     // Wysyłanie informacji o usunięciu elementu
@@ -820,7 +1121,7 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
                 }));
             }
         })
-        .catch(error => console.error('Error deleting element:', error));
+        .catch(error => console.error('Błąd usunięcia elementu:', error));
     }
 
     // Pobranie wartości ciasteczka CSRF
@@ -883,191 +1184,244 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
         document.getElementById('properties-panel').style.display = 'none';
     }
 
-    // Event listenery dla przycisków narzędzi
+    // Obsługa kliknięcia na płótnie dla tworzenia elementów
+    function createElementHandler(opt) {
+        if (opt.target || canvas.isDragging) return;
+
+        const pointer = canvas.getPointer(opt.e);
+
+        switch(currentTool) {
+            case 'text':
+                addTextElement({
+                    position_x: pointer.x,
+                    position_y: pointer.y
+                });
+                break;
+            case 'sticky':
+                addStickyNote({
+                    position_x: pointer.x,
+                    position_y: pointer.y
+                });
+                break;
+            case 'image':
+                // Tutaj możemy dodać wybór pliku
+                // W uproszczonej wersji dodajemy placeholder
+                addImageElement({
+                    position_x: pointer.x,
+                    position_y: pointer.y
+                });
+                break;
+        }
+
+        // Wracamy do narzędzia zaznaczania po utworzeniu elementu
+        if (['text', 'sticky', 'image'].includes(currentTool)) {
+            const selectButton = document.querySelector('[data-tool="select"]');
+            if (selectButton) {
+                selectButton.click();
+            }
+        }
+    }
+
+    // Konfiguracja przycisków narzędzi i obsługi zdarzeń właściwości
+    function setupToolsAndProperties() {
+        // Obsługa przycisków narzędzi
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                currentTool = this.dataset.tool;
+
+                // Usunięcie aktywnej klasy z wszystkich przycisków
+                document.querySelectorAll('.tool-btn').forEach(b => 
+                    b.classList.remove('active', 'btn-primary', 'active-tool')
+                );
+
+                // Dodanie aktywnej klasy do klikniętego przycisku
+                this.classList.add('active', 'btn-primary', 'active-tool');
+
+                // Włączenie/wyłączenie trybu rysowania
+                canvas.isDrawingMode = currentTool === 'pen';
+                if (canvas.isDrawingMode) {
+                    configureFreeDrawing();
+                    // Pokaż właściwości pióra
+                    document.getElementById('pen-properties').style.display = 'block';
+                } else {
+                    // Ukryj właściwości pióra
+                    document.getElementById('pen-properties').style.display = 'none';
+                }
+
+                // Jeśli wybrano narzędzie do tworzenia elementów, dodajemy nasłuchiwanie kliknięcia na płótnie
+                if (['text', 'sticky', 'image'].includes(currentTool)) {
+                    canvas.on('mouse:down', createElementHandler);
+                } else {
+                    canvas.off('mouse:down', createElementHandler);
+                }
+            });
+        });
+
+        // Obsługa zmian właściwości elementu
+        document.getElementById('element-z-index')?.addEventListener('change', function() {
+            const obj = canvas.getActiveObject();
+            if (obj) {
+                obj.set('zIndex', parseInt(this.value));
+                sendElementUpdate(obj);
+                canvas.renderAll();
+            }
+        });
+
+        document.getElementById('text-content')?.addEventListener('input', function() {
+            const obj = canvas.getActiveObject();
+            if (obj && obj.element_type === 'text') {
+                obj.set('text', this.value);
+                sendElementUpdate(obj);
+                canvas.renderAll();
+            }
+        });
+
+        document.getElementById('text-color')?.addEventListener('input', function() {
+            const obj = canvas.getActiveObject();
+            if (obj && obj.element_type === 'text') {
+                obj.set('fill', this.value);
+                sendElementUpdate(obj);
+                canvas.renderAll();
+            }
+        });
+
+        document.getElementById('text-size')?.addEventListener('change', function() {
+            const obj = canvas.getActiveObject();
+            if (obj && obj.element_type === 'text') {
+                obj.set('fontSize', this.value);
+                sendElementUpdate(obj);
+                canvas.renderAll();
+            }
+        });
+
+        document.getElementById('shape-color')?.addEventListener('input', function() {
+            const obj = canvas.getActiveObject();
+            if (obj && obj.element_type === 'shape') {
+                obj.set('fill', this.value);
+                sendElementUpdate(obj);
+                canvas.renderAll();
+            }
+        });
+
+        document.getElementById('shape-border-color')?.addEventListener('input', function() {
+            const obj = canvas.getActiveObject();
+            if (obj && obj.element_type === 'shape') {
+                obj.set('stroke', this.value);
+                sendElementUpdate(obj);
+                canvas.renderAll();
+            }
+        });
+
+        document.getElementById('shape-type')?.addEventListener('change', function() {
+            const obj = canvas.getActiveObject();
+            if (obj && obj.element_type === 'shape') {
+                const props = {
+                    position_x: obj.left,
+                    position_y: obj.top,
+                    width: obj.width,
+                    height: obj.height,
+                    properties: {
+                        type: this.value,
+                        fill: obj.fill,
+                        stroke: obj.stroke
+                    }
+                };
+
+                const objId = obj.id;
+                canvas.remove(obj);
+
+                if (objId) {
+                    sendElementDelete(objId);
+                }
+
+                addShapeElement(props);
+            }
+        });
+
+        document.getElementById('delete-element')?.addEventListener('click', function() {
+            const obj = canvas.getActiveObject();
+            if (obj) {
+                const objId = obj.id;
+                canvas.remove(obj);
+
+                if (objId) {
+                    sendElementDelete(objId);
+                }
+
+                hidePropertiesPanel();
+            }
+        });
+
+        // Obsługa ustawień pióra
+        document.querySelectorAll('.brush-size-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                penSize = parseInt(this.dataset.size);
+
+                // Aktualizacja aktywnej klasy
+                document.querySelectorAll('.brush-size-btn').forEach(b => 
+                    b.classList.remove('active')
+                );
+                this.classList.add('active');
+
+                // Aktualizacja pędzla
+                if (canvas.isDrawingMode) {
+                    canvas.freeDrawingBrush.width = penSize;
+                }
+            });
+        });
+
+        document.getElementById('pen-color')?.addEventListener('input', function() {
+            penColor = this.value;
+            if (canvas.isDrawingMode) {
+                canvas.freeDrawingBrush.color = penColor;
+            }
+        });
+
+        document.getElementById('pen-smoothing')?.addEventListener('change', function() {
+            penSmoothing = this.checked;
+            if (canvas.isDrawingMode) {
+                configureFreeDrawing();
+            }
+        });
+
+        // Obsługa ustawień siatki
+        document.getElementById('show-grid')?.addEventListener('change', function() {
+            showGrid = this.checked;
+            createGrid();
+        });
+
+        document.getElementById('grid-size')?.addEventListener('change', function() {
+            gridSize = parseInt(this.value);
+            createGrid();
+        });
+    }
+
+    // Inicjalizacja po załadowaniu DOM
     document.addEventListener('DOMContentLoaded', function() {
+        // Obsługa testów WebSocket
+        const wsTestBtn = document.getElementById('ws-test-btn');
+        if (wsTestBtn) {
+            wsTestBtn.addEventListener('click', function() {
+                testWebSocket(boardId);
+            });
+        }
+
         if (canEdit) {
             // Inicjalizacja WebSocket
             initializeWebSocket();
 
-            // Obsługa przycisków narzędzi
-            document.querySelectorAll('.tool-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    currentTool = this.dataset.tool;
-
-                    // Usunięcie aktywnej klasy z wszystkich przycisków
-                    document.querySelectorAll('.tool-btn').forEach(b => 
-                        b.classList.remove('active', 'btn-primary')
-                    );
-
-                    // Dodanie aktywnej klasy do klikniętego przycisku
-                    this.classList.add('active', 'btn-primary');
-
-                    // Włączenie/wyłączenie trybu rysowania
-                    canvas.isDrawingMode = currentTool === 'draw';
-
-                    // Jeśli wybrano narzędzie do tworzenia elementów, dodajemy nasłuchiwanie kliknięcia na płótnie
-                    if (['text', 'sticky', 'shape', 'line', 'image'].includes(currentTool)) {
-                        canvas.on('mouse:down', createElementHandler);
-                    } else {
-                        canvas.off('mouse:down', createElementHandler);
-                    }
-                });
-            });
-
-            // Obsługa kliknięcia na płótnie dla tworzenia elementów
-            function createElementHandler(opt) {
-                if (opt.target || canvas.isDragging) return;
-
-                const pointer = canvas.getPointer(opt.e);
-
-                switch(currentTool) {
-                    case 'text':
-                        addTextElement({
-                            position_x: pointer.x,
-                            position_y: pointer.y
-                        });
-                        break;
-                    case 'sticky':
-                        addStickyNote({
-                            position_x: pointer.x,
-                            position_y: pointer.y
-                        });
-                        break;
-                    case 'shape':
-                        addShapeElement({
-                            position_x: pointer.x,
-                            position_y: pointer.y
-                        });
-                        break;
-                    case 'line':
-                        addLineElement({
-                            position_x: pointer.x,
-                            position_y: pointer.y
-                        });
-                        break;
-                    case 'image':
-                        // Tutaj możemy dodać wybór pliku
-                        // W uproszczonej wersji dodajemy placeholder
-                        addImageElement({
-                            position_x: pointer.x,
-                            position_y: pointer.y
-                        });
-                        break;
-                }
-
-                // Wracamy do narzędzia zaznaczania po utworzeniu elementu
-                document.querySelector('[data-tool="select"]').click();
-            }
-
-            // Obsługa zmian właściwości elementu
-            document.getElementById('element-z-index').addEventListener('change', function() {
-                const obj = canvas.getActiveObject();
-                if (obj) {
-                    obj.set('zIndex', parseInt(this.value));
-                    sendElementUpdate(obj);
-                    canvas.renderAll();
-                }
-            });
-
-            document.getElementById('text-content').addEventListener('input', function() {
-                const obj = canvas.getActiveObject();
-                if (obj && obj.element_type === 'text') {
-                    obj.set('text', this.value);
-                    sendElementUpdate(obj);
-                    canvas.renderAll();
-                }
-            });
-
-            document.getElementById('text-color').addEventListener('input', function() {
-                const obj = canvas.getActiveObject();
-                if (obj && obj.element_type === 'text') {
-                    obj.set('fill', this.value);
-                    sendElementUpdate(obj);
-                    canvas.renderAll();
-                }
-            });
-
-            document.getElementById('text-size').addEventListener('change', function() {
-                const obj = canvas.getActiveObject();
-                if (obj && obj.element_type === 'text') {
-                    obj.set('fontSize', this.value);
-                    sendElementUpdate(obj);
-                    canvas.renderAll();
-                }
-            });
-
-            document.getElementById('shape-color').addEventListener('input', function() {
-                const obj = canvas.getActiveObject();
-                if (obj && obj.element_type === 'shape') {
-                    obj.set('fill', this.value);
-                    sendElementUpdate(obj);
-                    canvas.renderAll();
-                }
-            });
-
-            document.getElementById('shape-border-color').addEventListener('input', function() {
-                const obj = canvas.getActiveObject();
-                if (obj && obj.element_type === 'shape') {
-                    obj.set('stroke', this.value);
-                    sendElementUpdate(obj);
-                    canvas.renderAll();
-                }
-            });
-
-            document.getElementById('shape-type').addEventListener('change', function() {
-                const obj = canvas.getActiveObject();
-                if (obj && obj.element_type === 'shape') {
-                    // To byłaby pełna implementacja zmiany kształtu, ale jest dość złożona
-                    // w uproszczonej wersji możemy usunąć stary i utworzyć nowy
-                    const props = {
-                        position_x: obj.left,
-                        position_y: obj.top,
-                        width: obj.width,
-                        height: obj.height,
-                        properties: {
-                            type: this.value,
-                            fill: obj.fill,
-                            stroke: obj.stroke
-                        }
-                    };
-
-                    const objId = obj.id;
-                    canvas.remove(obj);
-
-                    if (objId) {
-                        sendElementDelete(objId);
-                    }
-
-                    addShapeElement(props);
-                }
-            });
-
-            document.getElementById('delete-element').addEventListener('click', function() {
-                const obj = canvas.getActiveObject();
-                if (obj) {
-                    const objId = obj.id;
-                    canvas.remove(obj);
-
-                    if (objId) {
-                        sendElementDelete(objId);
-                    }
-
-                    hidePropertiesPanel();
-                }
-            });
-
-            // Ustawienie domyślnego narzędzia
-            document.querySelector('[data-tool="select"]').click();
+            // Konfiguracja narzędzi i właściwości
+            setupToolsAndProperties();
         }
 
-        // Inicjalizacja Canvas
+        // Inicjalizacja Canvas (dla wszystkich)
         initCanvas();
+
+        // Ustawienie domyślnego narzędzia
+        const defaultToolBtn = document.querySelector('[data-tool="select"]');
+        if (defaultToolBtn) {
+            defaultToolBtn.click();
+        }
     });
 </script>
-                <!-- WebSocket Test Panel - Move this to a better position -->
-                <div id="ws-test-panel" style="position: fixed; bottom: 10px; right: 10px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; z-index: 1000; display: none;">
-                    <h5>Test WebSocket</h5>
-                    <p>Status: <span id="ws-status">Niepołączony</span></p>
-                    <button id="ws-test-btn" class="btn btn-sm btn-primary">Test połączenia</button>
-                </div>
 {% endblock %}
