@@ -17,12 +17,14 @@ class Element(models.Model):
         ('shape', 'Kształt'),
         ('sticky', 'Notatka'),
         ('line', 'Linia'),
+        ('path', 'Rysunek odręczny'),  # Dodano nowy typ dla rysunków odręcznych
     )
 
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='elements')
     element_type = models.CharField(max_length=20, choices=ELEMENT_TYPES)
     content = models.TextField(blank=True, null=True)  # Dla tekstu
     image = models.ImageField(upload_to='board_images/', blank=True, null=True)  # Dla obrazów
+    path = models.TextField(blank=True, null=True)  # Dla rysunków odręcznych - ścieżka SVG
     position_x = models.FloatField(default=0)
     position_y = models.FloatField(default=0)
     width = models.FloatField(default=100)
