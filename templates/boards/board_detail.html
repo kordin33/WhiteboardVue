@@ -23,12 +23,6 @@
     position: fixed;
     top: 70px;
 
-<!-- WebSocket Test Panel -->
-<div id="ws-test-panel" style="position: fixed; bottom: 10px; right: 10px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; z-index: 1000; display: none;">
-    <h5>Test WebSocket</h5>
-    <p>Status: <span id="ws-status">Niepołączony</span></p>
-    <button id="ws-test-btn" class="btn btn-sm btn-primary">Test połączenia</button>
-</div>
 
     left: 10px;
     z-index: 1000;
@@ -190,44 +184,57 @@
     let currentTool = 'select';
     let socket;
 
-    // Inicjalizacja WebSocketa
     function initializeWebSocket() {
-        // Tworzymy WebSocket - używamy względnej ścieżki
-        const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/boards/${boardId}/`;
+        // Create protocol based on page protocol
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/boards/${boardId}/`;
         console.log('Connecting to WebSocket URL:', wsUrl);
-        console.log('Trying to connect to WebSocket at:', wsUrl);
 
-        socket = new WebSocket(wsUrl);
+        try {
+            socket = new WebSocket(wsUrl);
 
-        socket.onopen = function(e) {
-            console.log('WebSocket połączony');
-        };
+            socket.onopen = function(e) {
+                console.log('WebSocket connected successfully');
+                document.getElementById('ws-status').textContent = 'Connected';
+                document.getElementById('ws-status').style.color = 'green';
+            };
 
-        socket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            console.log('Otrzymano wiadomość WebSocket:', data);
+            socket.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    console.log('Received WebSocket message:', data);
 
-            // Obsługa przychodzących zdarzeń
-            if (data.action === 'create_element') {
-                receiveCreateElement(data.element);
-            } else if (data.action === 'update_element') {
-                receiveUpdateElement(data.element);
-            } else if (data.action === 'delete_element') {
-                receiveDeleteElement(data.element_id);
-            }
-        };
+                    // Handle incoming events
+                    if (data.action === 'create_element') {
+                        receiveCreateElement(data.element);
+                    } else if (data.action === 'update_element') {
+                        receiveUpdateElement(data.element);
+                    } else if (data.action === 'delete_element') {
+                        receiveDeleteElement(data.element_id);
+                    }
+                } catch (error) {
+                    console.error('Error processing WebSocket message:', error);
+                }
+            };
 
-        socket.onclose = function(e) {
-            console.log('WebSocket rozłączony, kod:', e.code, 'powód:', e.reason);
-            // Próba ponownego połączenia po 5 sekundach
-            setTimeout(initializeWebSocket, 5000);
-        };
+            socket.onclose = function(e) {
+                console.log('WebSocket disconnected, code:', e.code, 'reason:', e.reason);
+                document.getElementById('ws-status').textContent = 'Disconnected (code: ' + e.code + ')';
+                document.getElementById('ws-status').style.color = 'red';
 
-        socket.onerror = function(e) {
-            console.error('Błąd WebSocket:', e);
-        };
+                // Try to reconnect after 5 seconds
+                setTimeout(initializeWebSocket, 5000);
+            };
+
+            socket.onerror = function(e) {
+                console.error('WebSocket error:', e);
+                document.getElementById('ws-status').textContent = 'Connection error';
+                document.getElementById('ws-status').style.color = 'red';
+            };
+        } catch (error) {
+            console.error('Error creating WebSocket:', error);
+        }
     }
-
     // Obsługa wiadomości z WebSocket -  funkcje receiveCreateElement, receiveUpdateElement, receiveDeleteElement  muszą być zdefiniowane
     function receiveCreateElement(element) {
         addElementFromData(element);
@@ -242,13 +249,93 @@
     }
 
 
-    // Inicjalizacja Canvas
+    // Modified canvas initialization
     function initCanvas() {
-        canvas = new fabric.Canvas('whiteboard-canvas', {
-            isDrawingMode: false,
-            selection: canEdit,
-            backgroundColor: 'white'
+        try {
+            // Create canvas with proper configuration
+            canvas = new fabric.Canvas('whiteboard-canvas', {
+                isDrawingMode: false,
+                selection: canEdit,
+                backgroundColor: 'white'
+            });
+
+            console.log('Canvas initialized successfully');
+
+            // Load elements after canvas initialization
+            loadBoardElements();
+
+            // Setup event listeners for canvas
+            setupCanvasEventListeners();
+        } catch (error) {
+            console.error('Error initializing canvas:', error);
+        }
+    }
+    function setupCanvasEventListeners() {
+        // Zoom handling
+        canvas.on('mouse:wheel', function(opt) {
+            const delta = opt.e.deltaY;
+            let zoom = canvas.getZoom();
+            zoom *= 0.999 ** delta;
+            if (zoom > 20) zoom = 20;
+            if (zoom < 0.1) zoom = 0.1;
+
+            canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+            opt.e.preventDefault();
+            opt.e.stopPropagation();
         });
+
+        // Pan handling
+        canvas.on('mouse:down', function(opt) {
+            if (currentTool === 'select' && opt.e.altKey) {
+                this.isDragging = true;
+                this.selection = false;
+                this.lastPosX = opt.e.clientX;
+                this.lastPosY = opt.e.clientY;
+            }
+        });
+
+        canvas.on('mouse:move', function(opt) {
+            if (this.isDragging) {
+                const e = opt.e;
+                const vpt = this.viewportTransform;
+                vpt[4] += e.clientX - this.lastPosX;
+                vpt[5] += e.clientY - this.lastPosY;
+                this.requestRenderAll();
+                this.lastPosX = e.clientX;
+                this.lastPosY = e.clientY;
+            }
+        });
+
+        canvas.on('mouse:up', function() {
+            this.isDragging = false;
+            this.selection = canEdit;
+        });
+
+        // Selection handling
+        canvas.on('selection:created', function(options) {
+            if (canEdit && options.selected && options.selected.length > 0) {
+                showPropertiesPanel(options.selected[0]);
+            }
+        });
+
+        canvas.on('selection:updated', function(options) {
+            if (canEdit && options.selected && options.selected.length > 0) {
+                showPropertiesPanel(options.selected[0]);
+            }
+        });
+
+        canvas.on('selection:cleared', function() {
+            hidePropertiesPanel();
+        });
+
+        // Object modification handling
+        canvas.on('object:modified', function(options) {
+            if (canEdit && options.target) {
+                console.log('Object modified:', options.target);
+                sendElementUpdate(options.target);
+            }
+        });
+    }
 
         // Konfiguracja powiększania/pomniejszania i przesuwania
         canvas.on('mouse:wheel', function(opt) {
@@ -977,4 +1064,10 @@ document.getElementById('ws-test-btn').addEventListener('click', function() {
         initCanvas();
     });
 </script>
+                <!-- WebSocket Test Panel - Move this to a better position -->
+                <div id="ws-test-panel" style="position: fixed; bottom: 10px; right: 10px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; z-index: 1000; display: none;">
+                    <h5>Test WebSocket</h5>
+                    <p>Status: <span id="ws-status">Niepołączony</span></p>
+                    <button id="ws-test-btn" class="btn btn-sm btn-primary">Test połączenia</button>
+                </div>
 {% endblock %}
