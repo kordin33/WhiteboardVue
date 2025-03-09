@@ -1,6 +1,6 @@
-run = ["python", "manage.py", "runserver", "0.0.0.0:8080"]
-entrypoint = "manage.py"
-modules = ["python-3.10:v18-20230807-322e88b"]
+run = "bash run_replit.sh"
+entrypoint = "run_replit.sh"
+modules = ["nodejs-20", "python-3.10:v18-20230807-322e88b"]
 hidden = [".pythonlibs"]
 
 [nix]
@@ -29,7 +29,6 @@ exposeLocalhost = true
 [[ports]]
 localPort = 8001
 externalPort = 8001
-exposeLocalhost = true
 
 [[ports]]
 localPort = 8080
