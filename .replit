@@ -24,7 +24,6 @@ externalPort = 3000
 [[ports]]
 localPort = 8000
 externalPort = 8000
-exposeLocalhost = true
 
 [[ports]]
 localPort = 8001
@@ -34,7 +33,12 @@ externalPort = 8001
 localPort = 8080
 externalPort = 80
 
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
 [workflows]
+runButton = "Run"
 
 [[workflows.workflow]]
 name = "Run"
@@ -42,6 +46,6 @@ author = 39823191
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "daphne -b 0.0.0.0 -p 8001 whiteboard_project.asgi:application"
+args = "./run_replit.sh"
 
 
