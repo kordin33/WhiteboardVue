@@ -11,6 +11,7 @@
     </main>
 
     <AppLoader v-if="isAppLoading" />
+    <DebugHelper />
   </div>
 </template>
 
@@ -19,13 +20,15 @@ import { onMounted, computed, watch } from 'vue';
 import { useStore } from 'vuex';
 import Navbar from '@/components/common/Navbar.vue';
 import AppLoader from '@/components/common/AppLoader.vue';
+import DebugHelper from '@/components/common/DebugHelper.vue';
 
 export default {
   name: 'App',
 
   components: {
     Navbar,
-    AppLoader
+    AppLoader,
+    DebugHelper
   },
 
   setup() {
@@ -36,7 +39,11 @@ export default {
 
     // Initialize user authentication state
     const initAuth = async () => {
-      await store.dispatch('auth/initAuth');
+      try {
+        await store.dispatch('auth/initAuth');
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      }
     };
 
     // Watch for dark mode changes and update document

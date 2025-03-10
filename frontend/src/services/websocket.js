@@ -1,7 +1,7 @@
-import { useToast } from 'vue3-toastify';
+import { toast } from 'vue3-toastify';
 import tokenUtils from '@/utils/tokenUtils';
 
-const toast = useToast();
+
 
 class WebSocketService {
   constructor() {
@@ -46,9 +46,9 @@ class WebSocketService {
       this.socket.onerror = this._onError.bind(this);
     } catch (error) {
       console.error('Error creating WebSocket:', error);
-      toast.error('Błąd połączenia WebSocket');
-    }
-  }
+      toast.error('Błąd połączenia WebSocket', { autoClose: 3000 });
+        }
+      }
 
   disconnect() {
     if (this.socket) {
@@ -70,10 +70,10 @@ class WebSocketService {
       return true;
     } else {
       console.error('WebSocket not connected, cannot send message');
-      toast.error('Błąd połączenia WebSocket. Odświerz stronę.');
-      return false;
-    }
-  }
+      toast.error('Błąd połączenia WebSocket. Odświerz stronę.', { autoClose: 3000 });
+          return false;
+        }
+      }
 
   addListener(eventType, callback) {
     if (this.listeners[eventType]) {
@@ -133,8 +133,8 @@ class WebSocketService {
 
   _onError(error) {
     console.error('WebSocket error:', error);
-    toast.error('Błąd połączenia WebSocket');
-  }
+    toast.error('Błąd połączenia WebSocket', { autoClose: 3000 });
+    }
 
   _attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -154,9 +154,9 @@ class WebSocketService {
       }, this.reconnectInterval);
     } else {
       console.error('Max reconnection attempts reached');
-      toast.error('Nie można połączyć z serwerem. Odśwież stronę.');
-    }
-  }
+      toast.error('Nie można połączyć z serwerem. Odśwież stronę.', { autoClose: 3000 });
+        }
+      }
 
   _notifyListeners(eventType, data) {
     if (this.listeners[eventType]) {

@@ -1,9 +1,7 @@
 import axios from 'axios';
-import { useToast } from 'vue3-toastify';
+import { toast } from 'vue3-toastify';
 import router from '@/router';
 import tokenUtils from '@/utils/tokenUtils';
-
-//const toast = useToast();
 
 // Create axios instance
 const api = axios.create({
@@ -38,7 +36,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // If error is 401 Unauthorized and not already retrying
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
