@@ -9,30 +9,14 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import './assets/styles/main.scss';
 
-// Add this import
-import TestPage from './components/common/TestPage.vue';
-
+// Utwórz aplikację
 const app = createApp(App);
 
-// Register test page component globally
-app.component('TestPage', TestPage);
-
-// Add debug info to router navigation
-const originalPush = router.push;
-router.push = function(location) {
-  console.log(`[Router] Navigating to:`, location);
-  return originalPush.call(this, location).catch(err => {
-    console.error('[Router] Navigation failed:', err);
-    toast.error(`Navigation error: ${err.message}`);
-    throw err;
-  });
-};
-
-// Use Vue Router and Vuex Store
+// Użyj Vue Router i Vuex Store
 app.use(router);
 app.use(store);
 
-// Configure toast notifications
+// Konfiguracja powiadomień toast
 app.use(ToastPlugin, {
   autoClose: 3000,
   position: 'top-right',
@@ -44,24 +28,25 @@ app.use(ToastPlugin, {
   rtl: false
 });
 
-// Error handler
+// Obsługa błędów
 app.config.errorHandler = (error, instance, info) => {
-  console.error('[Vue Error]:', error);
-  console.error('[Component]:', instance?.$options?.name || 'Unknown');
-  console.error('[Error Info]:', info);
+  console.error('Błąd Vue:', error);
+  console.error('Komponent:', instance);
+  console.error('Informacje o błędzie:', info);
 
-  // Show user friendly message
+  // Pokaż przyjazny dla użytkownika komunikat
   toast.error('Wystąpił błąd aplikacji. Spróbuj odświeżyć stronę.');
 };
 
-// Add a warning if bootstrap is not loaded properly
-if (typeof bootstrap === 'undefined') {
-  console.warn('[Bootstrap] Bootstrap JavaScript is not loaded correctly!');
-} else {
-  console.log('[Bootstrap] Bootstrap JavaScript is available:', bootstrap.version);
-}
+// Dodajmy globalny monitorowanie błędów
+window.onerror = function(message, source, lineno, colno, error) {
+  console.error('Globalny błąd JavaScript:', message);
+  console.error('Źródło:', source);
+  console.error('Linia:', lineno);
+  console.error('Szczegóły:', error);
+};
 
-// Mount the app
+// Zamontuj aplikację
 app.mount('#app');
 
-console.log('[App] Application started');
+console.log('Aplikacja Vue została utworzona i zamontowana pomyślnie');
