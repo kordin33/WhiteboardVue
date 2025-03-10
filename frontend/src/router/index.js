@@ -117,3 +117,95 @@ router.onError((error) => {
 });
 
 export default router;
+import { createRouter, createWebHistory } from 'vue-router';
+import tokenUtils from '@/utils/tokenUtils';
+import { toast } from 'vue3-toastify';
+
+// Import views
+import BasicView from '@/views/BasicView.vue';
+
+// Lazy loaded views
+const LoginView = () => import('@/views/auth/LoginView.vue');
+const RegisterView = () => import('@/views/auth/RegisterView.vue');
+const BoardsView = () => import('@/views/boards/BoardsView.vue');
+const BoardDetailView = () => import('@/views/boards/BoardDetailView.vue');
+const NotFoundView = () => import('@/views/NotFoundView.vue');
+
+const routes = [
+  {
+    path: '/',
+    redirect: '/boards'
+  },
+  {
+    path: '/basic',
+    name: 'Basic',
+    component: BasicView
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginView,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterView,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/boards',
+    name: 'Boards',
+    component: BoardsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/boards/:id',
+    name: 'BoardDetail',
+    component: BoardDetailView,
+    meta: { requiresAuth: true },
+    props: true
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: NotFoundView
+  }
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+});
+
+// Navigation guard
+router.beforeEach((to, from, next) => {
+  console.log(`[Router] Navigation: ${from.path} → ${to.path}`);
+  
+  const isAuthenticated = tokenUtils.isAuthenticated();
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false);
+  
+  console.log(`[Router] Route requires auth: ${requiresAuth}, User is authenticated: ${isAuthenticated}`);
+
+  if (requiresAuth && !isAuthenticated) {
+    console.log('[Router] Redirecting to login (auth required)');
+    next({ 
+      path: '/login', 
+      query: { redirect: to.fullPath } 
+    });
+  } else if (to.path === '/login' && isAuthenticated) {
+    console.log('[Router] User already logged in, redirecting to boards');
+    next('/boards');
+  } else {
+    console.log('[Router] Proceeding with navigation');
+    console.log('[Router] Loading component:', to.name + 'View');
+    next();
+  }
+});
+
+router.onError((error) => {
+  console.error('[Router] Błąd nawigacji:', error);
+  toast.error('Błąd podczas ładowania strony', { autoClose: 3000 });
+});
+
+export default router;

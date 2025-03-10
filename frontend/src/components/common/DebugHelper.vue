@@ -153,3 +153,157 @@ export default {
   font-size: 16px;
 }
 </style>
+<template>
+  <div class="debug-helper" :class="{ 'is-collapsed': isCollapsed }">
+    <div class="debug-header" @click="toggleCollapse">
+      Debug Info
+      <span class="toggle-icon">{{ isCollapsed ? '+' : '-' }}</span>
+    </div>
+    <div v-if="!isCollapsed" class="debug-content">
+      <div class="debug-section">
+        <h4>Route Info</h4>
+        <div class="debug-item">
+          <strong>Path:</strong> {{ route.path }}
+        </div>
+        <div class="debug-item">
+          <strong>Name:</strong> {{ route.name }}
+        </div>
+        <div class="debug-item">
+          <strong>Params:</strong> {{ JSON.stringify(route.params) }}
+        </div>
+        <div class="debug-item">
+          <strong>Query:</strong> {{ JSON.stringify(route.query) }}
+        </div>
+      </div>
+      
+      <div class="debug-section">
+        <h4>Auth Status</h4>
+        <div class="debug-item">
+          <strong>Authenticated:</strong> {{ isAuthenticated }}
+        </div>
+        <div v-if="user" class="debug-item">
+          <strong>User:</strong> {{ user.username }}
+        </div>
+      </div>
+      
+      <div class="debug-section">
+        <h4>Actions</h4>
+        <button @click="reloadPage" class="debug-btn">Reload Page</button>
+        <button @click="clearCache" class="debug-btn">Clear Cache</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { useStore } from 'vuex';
+
+export default {
+  name: 'DebugHelper',
+  
+  setup() {
+    const isCollapsed = ref(true);
+    const route = useRoute();
+    const store = useStore();
+    
+    const isAuthenticated = computed(() => store.getters.isAuthenticated);
+    const user = computed(() => store.getters.user);
+    
+    const toggleCollapse = () => {
+      isCollapsed.value = !isCollapsed.value;
+    };
+    
+    const reloadPage = () => {
+      window.location.reload();
+    };
+    
+    const clearCache = () => {
+      // Czyścimy tylko tokeny, aby wylogować użytkownika
+      store.dispatch('logout');
+      window.location.reload();
+    };
+    
+    return {
+      isCollapsed,
+      route,
+      isAuthenticated,
+      user,
+      toggleCollapse,
+      reloadPage,
+      clearCache
+    };
+  }
+}
+</script>
+
+<style scoped>
+.debug-helper {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  width: 300px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  z-index: 9999;
+  overflow: hidden;
+  transition: height 0.3s ease;
+}
+
+.debug-header {
+  padding: 8px 12px;
+  background-color: #007bff;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toggle-icon {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.debug-content {
+  padding: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.debug-section {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.debug-section h4 {
+  margin-top: 0;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  color: #007bff;
+}
+
+.debug-item {
+  margin-bottom: 4px;
+}
+
+.debug-btn {
+  background-color: #6c757d;
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 3px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.debug-btn:hover {
+  background-color: #5a6268;
+}
+</style>

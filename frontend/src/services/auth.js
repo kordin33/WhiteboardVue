@@ -98,3 +98,71 @@ const authService = {
 };
 
 export default authService;
+import api from './api';
+import tokenUtils from '@/utils/tokenUtils';
+import { toast } from 'vue3-toastify';
+
+export const authService = {
+  /**
+   * Login user with username and password
+   * @param {string} username - Username
+   * @param {string} password - Password
+   * @returns {Promise} Promise with user data if successful
+   */
+  async login(username, password) {
+    try {
+      const response = await api.post('/auth/login/', { username, password });
+      
+      // Save tokens and user data
+      tokenUtils.saveTokens(response.data.access, response.data.refresh);
+      tokenUtils.saveUserData(response.data.user);
+      
+      toast.success('Zalogowano pomyślnie');
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Register new user
+   * @param {Object} userData - User registration data
+   * @returns {Promise} Promise with user data if successful
+   */
+  async register(userData) {
+    try {
+      const response = await api.post('/auth/register/', userData);
+      toast.success('Rejestracja zakończona pomyślnie. Teraz możesz się zalogować.');
+      return response.data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Logout current user
+   */
+  logout() {
+    tokenUtils.clearTokens();
+    toast.info('Wylogowano pomyślnie');
+  },
+
+  /**
+   * Get current user data from API
+   * @returns {Promise} Promise with user data
+   */
+  async getCurrentUser() {
+    try {
+      const response = await api.get('/auth/user/');
+      tokenUtils.saveUserData(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Get current user error:', error);
+      throw error;
+    }
+  }
+};
+
+export default authService;

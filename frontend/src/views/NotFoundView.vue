@@ -104,3 +104,52 @@ h1 {
   color: #ced4da;
 }
 </style>
+<template>
+  <div class="not-found">
+    <div class="container">
+      <div class="not-found-content">
+        <h1>404</h1>
+        <h2>Strona nie znaleziona</h2>
+        <p>Przepraszamy, ale strona której szukasz nie istnieje.</p>
+        <router-link to="/" class="btn btn-primary">Wróć do strony głównej</router-link>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'NotFoundView'
+}
+</script>
+
+<style scoped>
+.not-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+}
+
+.not-found-content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.not-found h1 {
+  font-size: 6rem;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+.not-found h2 {
+  margin-bottom: 1rem;
+}
+
+.not-found p {
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+}
+</style>

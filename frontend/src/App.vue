@@ -1,221 +1,202 @@
+
 <template>
-  <div id="app" :class="{ 'dark-theme': isDarkMode }">
-    <div class="navbar" :class="{ 'navbar-dark': isDarkMode, 'navbar-light': !isDarkMode }">
-      <div class="container">
-        <router-link class="navbar-brand" to="/">
-          <i class="bi bi-easel2"></i> Whiteboard App
-        </router-link>
-
-        <div class="nav-links">
-          <template v-if="isAuthenticated">
-            <router-link class="nav-link" to="/boards">
-              <i class="bi bi-grid"></i> Moje tablice
-            </router-link>
-            <router-link class="nav-link" to="/boards/create">
-              <i class="bi bi-plus-circle"></i> Utwórz nową
-            </router-link>
-            <div class="user-section">
-              <span>{{ username }}</span>
-              <button @click="logout" class="btn btn-danger btn-sm">Wyloguj</button>
-            </div>
-          </template>
-          <template v-else>
-            <router-link class="nav-link" to="/login">
-              <i class="bi bi-box-arrow-in-right"></i> Zaloguj
-            </router-link>
-            <router-link class="nav-link" to="/register">
-              <i class="bi bi-person-plus"></i> Zarejestruj
-            </router-link>
-          </template>
-        </div>
-      </div>
-    </div>
-
-    <main>
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+  <div id="app">
+    <Navbar v-if="showNavbar" />
+    <main class="main-content">
+      <router-view />
     </main>
-
-    <AppLoader v-if="isAppLoading" />
+    <DebugHelper v-if="isDevelopment" />
   </div>
 </template>
 
 <script>
-import { onMounted, computed, watch } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
-import AppLoader from '@/components/common/AppLoader.vue';
+import { useRoute } from 'vue-router';
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
+// Importy komponentów
 export default {
   name: 'App',
-
-  components: {
-    AppLoader
-  },
-
+  
   setup() {
     const store = useStore();
-    const router = useRouter();
-
-    const isAppLoading = computed(() => store.getters.isAppLoading);
-    const isDarkMode = computed(() => store.getters.isDarkMode);
-    const isAuthenticated = computed(() => store.getters['auth/isAuthenticated']);
-    const username = computed(() => {
-      const user = store.getters['auth/currentUser'];
-      return user ? user.username : '';
+    const route = useRoute();
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    // Sprawdź czy pokazać navbar
+    const showNavbar = computed(() => {
+      return route.name !== 'Login' && route.name !== 'Register';
     });
-
-    // Inicjalizacja stanu uwierzytelniania użytkownika
-    const initAuth = async () => {
-      try {
-        await store.dispatch('auth/initAuth');
-      } catch (error) {
-        console.error('Błąd inicjalizacji uwierzytelniania:', error);
-      }
-    };
-
-    // Obserwuj zmiany trybu ciemnego i aktualizuj dokument
-    watch(isDarkMode, (newValue) => {
-      if (newValue) {
-        document.documentElement.classList.add('dark-theme');
-      } else {
-        document.documentElement.classList.remove('dark-theme');
-      }
-    }, { immediate: true });
-
-    // Funkcja wylogowania
-    const logout = async () => {
-      await store.dispatch('auth/logout');
-      router.push('/login');
-    };
-
+    
     onMounted(() => {
-      initAuth();
-      console.log('App component został zamontowany');
+      console.log('App component mounted');
+      
+      // Próba załadowania użytkownika z localStorage
+      store.dispatch('loadUser');
+      
+      console.log('Vue app created and mounted');
+      console.log('Navigating to: ' + route.path);
     });
-
+    
     return {
-      isAppLoading,
-      isDarkMode,
-      isAuthenticated,
-      username,
-      logout
+      showNavbar,
+      isDevelopment
     };
+  },
+  
+  components: {
+    Navbar: () => import('@/components/common/Navbar.vue'),
+    DebugHelper: () => import('@/components/common/DebugHelper.vue')
   }
-};
+}
 </script>
 
 <style>
 :root {
-  --primary: #3498db;
-  --secondary: #6c757d;
-  --success: #2ecc71;
-  --danger: #e74c3c;
-  --warning: #f39c12;
-  --info: #3498db;
-  --light: #f8f9fa;
-  --dark: #343a40;
-  --body-bg: #f8f9fa;
-  --body-color: #212529;
+  --primary-color: #4a6fa5;
+  --secondary-color: #166088;
+  --accent-color: #4cb5f5;
+  --dark-color: #13293d;
+  --light-color: #e8f1f2;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --border-radius: 4px;
 }
 
-:root.dark-theme {
-  --primary: #3498db;
-  --secondary: #6c757d;
-  --success: #2ecc71;
-  --danger: #e74c3c;
-  --warning: #f39c12;
-  --info: #3498db;
-  --light: #343a40;
-  --dark: #f8f9fa;
-  --body-bg: #121212;
-  --body-color: #f8f9fa;
-}
-
-/* Style globalne */
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--body-bg);
-  color: var(--body-color);
+  line-height: 1.6;
+  color: #333;
+  background-color: #f5f5f5;
 }
 
 #app {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
-main {
+.main-content {
   flex: 1;
-  padding: 20px;
-}
-
-/* Navbar */
-.navbar {
-  background-color: var(--primary);
-  padding: 10px 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0;
 }
 
 .container {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
-.navbar-brand {
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: white;
-  text-decoration: none;
+.btn {
+  display: inline-block;
+  font-weight: 400;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  user-select: none;
+  border: 1px solid transparent;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-radius: var(--border-radius);
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
 }
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+.btn-primary {
+  color: #fff;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
-.nav-link {
-  color: white;
-  text-decoration: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+.btn-primary:hover {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
 }
 
-.nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+.btn-outline-secondary {
+  color: var(--dark-color);
+  background-color: transparent;
+  border-color: var(--dark-color);
 }
 
-.user-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: 20px;
-  color: white;
+.btn-outline-secondary:hover {
+  color: #fff;
+  background-color: var(--dark-color);
+  border-color: var(--dark-color);
 }
 
-/* Transitions */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
+.card {
+  background-color: #fff;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.card-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  background-color: var(--light-color);
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #495057;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ced4da;
+  border-radius: var(--border-radius);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  color: #495057;
+  background-color: #fff;
+  border-color: var(--accent-color);
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(74, 111, 165, 0.25);
+}
+
+.alert {
+  position: relative;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+}
+
+.alert-danger {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+.alert-success {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
 }
 </style>
