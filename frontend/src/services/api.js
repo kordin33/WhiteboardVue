@@ -3,7 +3,7 @@ import { useToast } from 'vue3-toastify';
 import router from '@/router';
 import tokenUtils from '@/utils/tokenUtils';
 
-const toast = useToast();
+//const toast = useToast();
 
 // Create axios instance
 const api = axios.create({

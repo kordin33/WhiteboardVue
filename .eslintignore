@@ -1,0 +1,5 @@
+/src/components/board/Canvas.vue
+/src/components/board/Toolbar.vue
+/src/services/websocket.js
+/src/store/modules/boards.js
+/src/store/modules/elements.js

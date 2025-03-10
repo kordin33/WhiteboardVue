@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
 import store from './store';
+import { toast, ToastPlugin } from 'vue3-toastify'
 import { useToast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -26,6 +27,7 @@ app.use(useToast, {
 // Use Vue Router and Vuex Store
 app.use(router);
 app.use(store);
+app.use(ToastPlugin) ;// Register the toast plugin
 
 // Error handler
 app.config.errorHandler = (error, instance, info) => {
