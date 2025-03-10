@@ -1,7 +1,10 @@
+
+// store/index.js
 import { createStore } from 'vuex';
 import auth from './modules/auth';
 import boards from './modules/boards';
 import elements from './modules/elements';
+import main from './modules/main';
 
 export default createStore({
   state: {
@@ -53,6 +56,7 @@ export default createStore({
   modules: {
     auth,
     boards,
-    elements
+    elements,
+    main
   }
 });

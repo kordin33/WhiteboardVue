@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import tokenUtils from '@/utils/tokenUtils';
 import LoginView from '@/views/LoginView.vue';
 import RegisterView from '@/views/RegisterView.vue';
+import NotFoundView from '@/views/NotFoundView.vue';
 // Oparte na lazy loading dla lepszej wydajności
 
 // Dodajemy debugowanie
@@ -52,7 +53,25 @@ const routes = [
       title: 'Tablica'
     }
   },
-  
+  {
+    path: '/basic',
+    name: 'basic',
+    component: () => loadComponent(import('@/views/BasicView.vue'), 'BasicView'),
+    meta: {
+      requiresAuth: false,
+      title: 'Strona testowa'
+    }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: NotFoundView,
+    meta: {
+      requiresAuth: false,
+      title: '404 - Nie znaleziono'
+    }
+  }
+
 ];
 
 const router = createRouter({
