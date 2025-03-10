@@ -1,14 +1,25 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import tokenUtils from '@/utils/tokenUtils';
-import LoginView from '@/views/LoginView.vue';
-import RegisterView from '@/views/RegisterView.vue';
-import NotFoundView from '@/views/NotFoundView.vue';
-// Oparte na lazy loading dla lepszej wydajności
 
-// Dodajemy debugowanie
-const loadComponent = (importFn, name) => {
-  console.log(`Ładowanie komponentu: ${name}`);
-  return importFn();
+// Import the test page
+import TestPage from '@/components/common/TestPage.vue';
+
+// Lazy loaded components for better performance
+const BoardListView = () => import('@/views/BoardListView.vue');
+const BoardDetailView = () => import('@/views/BoardDetailView.vue');
+const LoginView = () => import('@/views/LoginView.vue');
+const RegisterView = () => import('@/views/RegisterView.vue');
+const NotFoundView = () => import('@/views/NotFoundView.vue');
+
+// Add debug information to imports
+const debugImport = (importFn, name) => {
+  return () => {
+    console.log(`[Router] Loading component: ${name}`);
+    return importFn().catch(err => {
+      console.error(`[Router] Failed to load component ${name}:`, err);
+      throw err;
+    });
+  };
 };
 
 const routes = [
@@ -19,193 +30,95 @@ const routes = [
   {
     path: '/login',
     name: 'login',
-    component: LoginView,
+    component: debugImport(() => import('@/views/LoginView.vue'), 'LoginView'),
     meta: { 
       requiresAuth: false,
-      title: 'Logowanie'
+      title: 'Login'
     }
   },
   {
     path: '/register',
     name: 'register',
-    component: RegisterView,
+    component: debugImport(() => import('@/views/RegisterView.vue'), 'RegisterView'),
     meta: { 
       requiresAuth: false,
-      title: 'Rejestracja'
+      title: 'Register'
     }
   },
   {
     path: '/boards',
     name: 'boards',
-    component: () => loadComponent(import('@/views/BoardListView.vue'), 'BoardListView'),
+    component: debugImport(() => import('@/views/BoardListView.vue'), 'BoardListView'),
     meta: { 
       requiresAuth: true,
-      title: 'Moje tablice'
+      title: 'My Boards'
     }
   },
   {
     path: '/boards/:id',
     name: 'board-detail',
-    component: () => loadComponent(import('@/views/BoardDetailView.vue'), 'BoardDetailView'),
+    component: debugImport(() => import('@/views/BoardDetailView.vue'), 'BoardDetailView'),
     props: true,
     meta: { 
       requiresAuth: true,
-      title: 'Tablica'
+      title: 'Whiteboard'
     }
   },
+  // Add test page route
   {
-    path: '/basic',
-    name: 'basic',
-    component: () => loadComponent(import('@/views/BasicView.vue'), 'BasicView'),
+    path: '/test',
+    name: 'test',
+    component: TestPage,
     meta: {
-      requiresAuth: false,
-      title: 'Strona testowa'
+      title: 'Router Test Page'
     }
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: NotFoundView,
-    meta: {
-      requiresAuth: false,
-      title: '404 - Nie znaleziono'
+    meta: { 
+      title: 'Page Not Found'
     }
   }
-
 ];
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
-  routes,
-  scrollBehavior() {
-    // Zawsze przewijaj do góry przy zmianie strony
-    return { top: 0 }
-  }
-});
-
-// Zabezpieczenie nawigacji
-router.beforeEach((to, from, next) => {
-  console.log(`Nawigacja: ${from.fullPath} → ${to.fullPath}`);
-
-  // Aktualizuj tytuł dokumentu
-  document.title = to.meta.title ? `${to.meta.title} | Whiteboard App` : 'Whiteboard App';
-
-  // Sprawdź uwierzytelnianie dla tras, które tego wymagają
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  const isAuthenticated = tokenUtils.isAuthenticated();
-
-  console.log(`Trasa wymaga uwierzytelnienia: ${requiresAuth}, Użytkownik jest uwierzytelniony: ${isAuthenticated}`);
-
-  if (requiresAuth && !isAuthenticated) {
-    // Przekieruj do logowania, jeśli nie jest uwierzytelniony
-    console.log(`Przekierowanie do logowania (wymagane uwierzytelnienie)`);
-    next({ name: 'login', query: { redirect: to.fullPath } });
-  } else if (!requiresAuth && isAuthenticated && (to.name === 'login' || to.name === 'register')) {
-    // Przekieruj do tablic, jeśli już uwierzytelniony i próbuje uzyskać dostęp do logowania/rejestracji
-    console.log(`Przekierowanie do tablic (już uwierzytelniony)`);
-    next({ name: 'boards' });
-  } else {
-    // Kontynuuj normalnie
-    console.log(`Kontynuacja nawigacji`);
-    next();
-  }
-});
-
-// Dodaj debugowanie błędów nawigacji
-router.onError((error) => {
-  console.error('[Router] Błąd nawigacji:', error);
-});
-
-export default router;
-import { createRouter, createWebHistory } from 'vue-router';
-import tokenUtils from '@/utils/tokenUtils';
-import { toast } from 'vue3-toastify';
-
-// Import views
-import BasicView from '@/views/BasicView.vue';
-
-// Lazy loaded views
-const LoginView = () => import('@/views/auth/LoginView.vue');
-const RegisterView = () => import('@/views/auth/RegisterView.vue');
-const BoardsView = () => import('@/views/boards/BoardsView.vue');
-const BoardDetailView = () => import('@/views/boards/BoardDetailView.vue');
-const NotFoundView = () => import('@/views/NotFoundView.vue');
-
-const routes = [
-  {
-    path: '/',
-    redirect: '/boards'
-  },
-  {
-    path: '/basic',
-    name: 'Basic',
-    component: BasicView
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: LoginView,
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/register',
-    name: 'Register',
-    component: RegisterView,
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/boards',
-    name: 'Boards',
-    component: BoardsView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/boards/:id',
-    name: 'BoardDetail',
-    component: BoardDetailView,
-    meta: { requiresAuth: true },
-    props: true
-  },
-  {
-    path: '/:pathMatch(.*)*',
-    name: 'NotFound',
-    component: NotFoundView
-  }
-];
-
-const router = createRouter({
-  history: createWebHistory(),
   routes
 });
 
-// Navigation guard
+// Add debug logging to router navigation
 router.beforeEach((to, from, next) => {
-  console.log(`[Router] Navigation: ${from.path} → ${to.path}`);
-  
+  console.log(`[Router] Navigation: ${from.fullPath} → ${to.fullPath}`);
+
+  // Update document title
+  document.title = to.meta.title ? `${to.meta.title} | Whiteboard App` : 'Whiteboard App';
+
+  // Check authentication for routes that require it
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const isAuthenticated = tokenUtils.isAuthenticated();
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false);
-  
+
   console.log(`[Router] Route requires auth: ${requiresAuth}, User is authenticated: ${isAuthenticated}`);
 
   if (requiresAuth && !isAuthenticated) {
-    console.log('[Router] Redirecting to login (auth required)');
-    next({ 
-      path: '/login', 
-      query: { redirect: to.fullPath } 
-    });
-  } else if (to.path === '/login' && isAuthenticated) {
-    console.log('[Router] User already logged in, redirecting to boards');
-    next('/boards');
+    // Redirect to login if not authenticated
+    console.log(`[Router] Redirecting to login (auth required)`);
+    next({ name: 'login', query: { redirect: to.fullPath } });
+  } else if (!requiresAuth && isAuthenticated && (to.name === 'login' || to.name === 'register')) {
+    // Redirect to boards if already authenticated and trying to access login/register
+    console.log(`[Router] Redirecting to boards (already authenticated)`);
+    next({ name: 'boards' });
   } else {
-    console.log('[Router] Proceeding with navigation');
-    console.log('[Router] Loading component:', to.name + 'View');
+    // Proceed as normal
+    console.log(`[Router] Proceeding with navigation`);
     next();
   }
 });
 
+// Add debugging for navigation errors
 router.onError((error) => {
-  console.error('[Router] Błąd nawigacji:', error);
-  toast.error('Błąd podczas ładowania strony', { autoClose: 3000 });
+  console.error('[Router] Navigation Error:', error);
 });
 
 export default router;
