@@ -1,0 +1,226 @@
+@import 'variables';
+
+/* Base styles */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  color: $body-color;
+  background-color: $body-bg;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+/* Cards */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  word-wrap: break-word;
+  background-color: $white;
+  background-clip: border-box;
+  border: $card-border-width solid $gray-300;
+  border-radius: $card-border-radius;
+  box-shadow: $card-box-shadow;
+  transition: transform 0.3s, box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Buttons enhancement */
+.btn {
+  transition: all 0.2s;
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &.btn-primary {
+    &:hover {
+      background-color: darken($primary, 7%);
+      border-color: darken($primary, 10%);
+    }
+  }
+
+  &.btn-success {
+    &:hover {
+      background-color: darken($success, 7%);
+      border-color: darken($success, 10%);
+    }
+  }
+
+  &.btn-danger {
+    &:hover {
+      background-color: darken($danger, 7%);
+      border-color: darken($danger, 10%);
+    }
+  }
+}
+
+/* Form controls */
+.form-control {
+  &:focus {
+    border-color: $primary;
+    box-shadow: 0 0 0 0.2rem rgba($primary, 0.25);
+  }
+}
+
+/* Whiteboard specific styles */
+.whiteboard-container {
+  width: 100%;
+  height: calc(100vh - $header-height);
+  background-color: $gray-100;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Dark theme */
+:root.dark-theme {
+  /* Base */
+  --bs-body-bg: #{$dark-bg};
+  --bs-body-color: #{$dark-text};
+
+  /* Components */
+  .card {
+    background-color: $dark-card-bg;
+    border-color: $dark-border;
+  }
+
+  .btn-outline-secondary {
+    color: $gray-400;
+    border-color: $gray-600;
+
+    &:hover {
+      background-color: $gray-700;
+      color: $white;
+    }
+  }
+
+  .form-control {
+    background-color: $dark-card-bg;
+    border-color: $dark-border;
+    color: $dark-text;
+
+    &:focus {
+      background-color: lighten($dark-card-bg, 5%);
+    }
+  }
+
+  .input-group-text {
+    background-color: $gray-700;
+    border-color: $dark-border;
+    color: $gray-300;
+  }
+
+  .dropdown-menu {
+    background-color: $dark-card-bg;
+    border-color: $dark-border;
+  }
+
+  .dropdown-item {
+    color: $dark-text;
+
+    &:hover, &:focus {
+      background-color: $gray-700;
+    }
+  }
+
+  .modal-content {
+    background-color: $dark-bg;
+    border-color: $dark-border;
+  }
+
+  .modal-header, .modal-footer {
+    border-color: $dark-border;
+  }
+
+  .table {
+    color: $dark-text;
+
+    th, td {
+      border-color: $dark-border;
+    }
+  }
+
+  .whiteboard-container {
+    background-color: $gray-800;
+  }
+}
+
+/* Utility classes */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.shadow-hover {
+  transition: box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+}
+
+/* Animation utility classes */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-in-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease-in-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

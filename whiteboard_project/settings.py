@@ -9,11 +9,8 @@ ALLOWED_HOSTS = ['*', '.replit.dev', '.repl.co']
 # Ustawienia dla Replit
 CSRF_TRUSTED_ORIGINS = ['https://*.replit.dev', 'https://*.repl.co','https://*.janeway.replit.dev']
 
-   
-
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -22,11 +19,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'channels',  # Dodajemy Django Channels
+    'channels',  # Django Channels
+    'rest_framework',  # Django REST Framework
+    'corsheaders',  # CORS headers
     'boards',    # Nasza aplikacja tablic
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # Dodaj na początku dla CORS
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -35,6 +35,46 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Konfiguracja CORS - podczas rozwoju zezwalamy na wszystkie źródła
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+# REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# JWT Settings
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'JTI_CLAIM': 'jti',
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
 
 ROOT_URLCONF = 'whiteboard_project.urls'
 
@@ -55,7 +95,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'whiteboard_project.wsgi.application'
-ASGI_APPLICATION = 'whiteboard_project.asgi.application'  # Dodajemy ASGI dla Channels
+ASGI_APPLICATION = 'whiteboard_project.asgi.application'  # ASGI dla Channels
 
 # Konfiguracja kanałów dla WebSockets
 CHANNEL_LAYERS = {
@@ -90,6 +130,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Konfiguracja dla frontendu Vue.js (zostanie dodana później)
+# FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend', 'dist')
+# STATICFILES_DIRS.append(FRONTEND_DIR)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

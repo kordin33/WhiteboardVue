@@ -1,26 +1,123 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app" :class="{ 'dark-theme': isDarkMode }">
+    <Navbar />
+
+    <main>
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
+
+    <AppLoader v-if="isAppLoading" />
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import { onMounted, computed, watch } from 'vue';
+import { useStore } from 'vuex';
+import Navbar from '@/components/common/Navbar.vue';
+import AppLoader from '@/components/common/AppLoader.vue';
 
 export default {
   name: 'App',
+
   components: {
-    HelloWorld
+    Navbar,
+    AppLoader
+  },
+
+  setup() {
+    const store = useStore();
+
+    const isAppLoading = computed(() => store.getters.isAppLoading);
+    const isDarkMode = computed(() => store.getters.isDarkMode);
+
+    // Initialize user authentication state
+    const initAuth = async () => {
+      await store.dispatch('auth/initAuth');
+    };
+
+    // Watch for dark mode changes and update document
+    watch(isDarkMode, (newValue) => {
+      if (newValue) {
+        document.documentElement.classList.add('dark-theme');
+      } else {
+        document.documentElement.classList.remove('dark-theme');
+      }
+    }, { immediate: true });
+
+    onMounted(() => {
+      initAuth();
+    });
+
+    return {
+      isAppLoading,
+      isDarkMode
+    };
   }
-}
+};
 </script>
 
 <style>
+:root {
+  --primary: #3498db;
+  --secondary: #6c757d;
+  --success: #2ecc71;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --info: #3498db;
+  --light: #f8f9fa;
+  --dark: #343a40;
+  --body-bg: #f8f9fa;
+  --body-color: #212529;
+}
+
+:root.dark-theme {
+  --primary: #3498db;
+  --secondary: #6c757d;
+  --success: #2ecc71;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --info: #3498db;
+  --light: #343a40;
+  --dark: #f8f9fa;
+  --body-bg: #121212;
+  --body-color: #f8f9fa;
+}
+
+/* Global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--body-bg);
+  color: var(--body-color);
+}
+
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

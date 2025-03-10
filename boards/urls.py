@@ -1,10 +1,18 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from rest_framework_nested import routers
+from .views import BoardViewSet, ElementViewSet, TemplateViewSet
+
+# Główny router
+router = DefaultRouter()
+router.register(r'boards', BoardViewSet, basename='board')
+router.register(r'templates', TemplateViewSet, basename='template')
+
+# Zagnieżdżony router dla elementów tablicy
+boards_router = routers.NestedSimpleRouter(router, r'boards', lookup='board')
+boards_router.register(r'elements', ElementViewSet, basename='board-element')
 
 urlpatterns = [
-    path('', views.board_list, name='board_list'),
-    path('create/', views.create_board, name='create_board'),
-    path('<int:board_id>/', views.board_detail, name='board_detail'),
-    path('api/<int:board_id>/elements/', views.api_elements, name='api_elements'),
-    path('api/<int:board_id>/elements/<int:element_id>/', views.api_element_detail, name='api_element_detail'),
+    path('api/', include(router.urls)),
+    path('api/', include(boards_router.urls)),
 ]

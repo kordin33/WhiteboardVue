@@ -1,164 +1,205 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .models import Board, Element, BoardPermission
-import json
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from .models import Board, Element, BoardPermission, ElementHistory, Template
+from .serializers import (
+    BoardSerializer, ElementSerializer, BoardPermissionSerializer,
+    ElementHistorySerializer, TemplateSerializer
+)
+from .permissions import IsBoardOwnerOrHasPermission, IsElementBoardOwnerOrHasPermission
 
-@login_required
-def board_list(request):
-    # Tablice stworzone przez użytkownika
-    owned_boards = Board.objects.filter(owner=request.user)
+class BoardViewSet(viewsets.ModelViewSet):
+    serializer_class = BoardSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    # Tablice z uprawnieniami
-    shared_boards = Board.objects.filter(permissions__user=request.user).exclude(owner=request.user)
+    def get_queryset(self):
+        user = self.request.user
+        # Zwróć tablice, których użytkownik jest właścicielem lub ma uprawnienia
+        owned_boards = Board.objects.filter(owner=user)
+        shared_boards = Board.objects.filter(permissions__user=user)
+        return (owned_boards | shared_boards).distinct().order_by('-updated_at')
 
-    return render(request, 'boards/board_list.html', {
-        'owned_boards': owned_boards,
-        'shared_boards': shared_boards
-    })
+    @action(detail=True, methods=['post'])
+    def share(self, request, pk=None):
+        board = self.get_object()
+        if board.owner != request.user:
+            return Response({"error": "Tylko właściciel może udostępniać tablicę"}, 
+                           status=status.HTTP_403_FORBIDDEN)
 
-@login_required
-def create_board(request):
-    if request.method == 'POST':
-        title = request.POST.get('title', 'Nowa tablica')
-        board = Board.objects.create(title=title, owner=request.user)
-        return redirect('board_detail', board_id=board.id)
+        serializer = BoardPermissionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(board=board)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    return render(request, 'boards/create_board.html')
+    @action(detail=True, methods=['delete'])
+    def unshare(self, request, pk=None):
+        board = self.get_object()
+        if board.owner != request.user:
+            return Response({"error": "Tylko właściciel może cofnąć udostępnianie"}, 
+                           status=status.HTTP_403_FORBIDDEN)
 
-@login_required
-def board_detail(request, board_id):
-    board = get_object_or_404(Board, id=board_id)
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({"error": "Brak parametru user_id"}, 
+                           status=status.HTTP_400_BAD_REQUEST)
 
-    # Sprawdzanie uprawnień
-    if board.owner != request.user and not BoardPermission.objects.filter(board=board, user=request.user).exists():
-        return redirect('board_list')
+        permission = get_object_or_404(BoardPermission, board=board, user_id=user_id)
+        permission.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # Sprawdzanie czy user ma uprawnienia do edycji czy tylko do przeglądania
-    can_edit = board.owner == request.user or BoardPermission.objects.filter(
-        board=board, user=request.user, permission_type__in=['edit', 'admin']
-    ).exists()
+    @action(detail=True, methods=['get'])
+    def export_pdf(self, request, pk=None):
+        # Logika eksportu do PDF będzie implementowana w Vue.js
+        # Ten endpoint jest tylko do weryfikacji uprawnień
+        self.get_object()  # Sprawdza uprawnienia
+        return Response({"status": "PDF export initiated"})
 
-    return render(request, 'boards/board_detail.html', {
-        'board': board,
-        'can_edit': can_edit,
-    })
+class ElementViewSet(viewsets.ModelViewSet):
+    serializer_class = ElementSerializer
+    permission_classes = [permissions.IsAuthenticated, IsElementBoardOwnerOrHasPermission]
 
-@login_required
-@csrf_exempt
-def api_elements(request, board_id):
-    board = get_object_or_404(Board, id=board_id)
+    def get_queryset(self):
+        board_id = self.kwargs.get('board_pk')
+        return Element.objects.filter(board_id=board_id).order_by('z_index')
 
-    # Sprawdzanie uprawnień
-    has_permission = (
-        board.owner == request.user or 
-        BoardPermission.objects.filter(
-            board=board, 
-            user=request.user, 
-            permission_type__in=['edit', 'admin']
-        ).exists()
-    )
+    def perform_create(self, serializer):
+        board_id = self.kwargs.get('board_pk')
+        board = get_object_or_404(Board, id=board_id)
+        serializer.save(board=board, created_by=self.request.user)
 
-    if not has_permission:
-        return JsonResponse({'error': 'Brak uprawnień'}, status=403)
+        # Zapisz historię (dla undo/redo)
+        ElementHistory.objects.create(
+            element_id=serializer.instance.id,
+            action_type='create',
+            data=ElementSerializer(serializer.instance).data,
+            performed_by=self.request.user
+        )
 
-    if request.method == 'GET':
-        elements = Element.objects.filter(board=board).values()
-        return JsonResponse(list(elements), safe=False)
+    def perform_update(self, serializer):
+        # Zapisz historię przed aktualizacją
+        original_data = ElementSerializer(self.get_object()).data
+        ElementHistory.objects.create(
+            element=self.get_object(),
+            action_type='update',
+            data=original_data,
+            performed_by=self.request.user
+        )
+        serializer.save()
 
-    elif request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            element = Element.objects.create(
-                board=board,
-                element_type=data.get('element_type'),
-                content=data.get('content'),
-                position_x=data.get('position_x', 0),
-                position_y=data.get('position_y', 0),
-                width=data.get('width', 100),
-                height=data.get('height', 100),
-                rotation=data.get('rotation', 0),
-                z_index=data.get('z_index', 0),
-                properties=data.get('properties', {}),
-                created_by=request.user
+    def perform_destroy(self, instance):
+        # Zapisz historię przed usunięciem
+        ElementHistory.objects.create(
+            element=instance,
+            action_type='delete',
+            data=ElementSerializer(instance).data,
+            performed_by=self.request.user
+        )
+        instance.delete()
+
+    @action(detail=False, methods=['get'])
+    def history(self, request, board_pk=None):
+        board = get_object_or_404(Board, id=board_pk)
+        elements = Element.objects.filter(board=board)
+        history = ElementHistory.objects.filter(element__in=elements).order_by('-timestamp')
+
+        # Opcjonalnie możemy ograniczyć ilość historii
+        limit = int(request.query_params.get('limit', 100))
+        history = history[:limit]
+
+        serializer = ElementHistorySerializer(history, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def undo(self, request, board_pk=None):
+        # Implementacja logiki undo
+        board = get_object_or_404(Board, id=board_pk)
+        # Znajdź najnowszą akcję dla tablicy
+        last_action = ElementHistory.objects.filter(
+            element__board=board,
+            performed_by=request.user
+        ).order_by('-timestamp').first()
+
+        if not last_action:
+            return Response({"error": "Brak akcji do cofnięcia"}, 
+                           status=status.HTTP_404_NOT_FOUND)
+
+        # Logika cofania w zależności od typu akcji
+        if last_action.action_type == 'create':
+            # Usuń element, który został utworzony
+            last_action.element.delete()
+        elif last_action.action_type == 'update':
+            # Przywróć poprzedni stan elementu
+            element = last_action.element
+            previous_data = last_action.data
+            for key, value in previous_data.items():
+                if key not in ['id', 'created_at', 'updated_at', 'created_by']:
+                    setattr(element, key, value)
+            element.save()
+        elif last_action.action_type == 'delete':
+            # Odtwórz usunięty element
+            deleted_data = last_action.data
+            Element.objects.create(
+                board_id=board_pk,
+                **{k: v for k, v in deleted_data.items() 
+                   if k not in ['id', 'created_at', 'updated_at', 'created_by', 'board']}
             )
 
-            return JsonResponse({
-                'id': element.id,
-                'message': 'Element został dodany'
-            })
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
+        # Usuń wpis historii
+        last_action.delete()
 
-    return JsonResponse({'error': 'Nieprawidłowa metoda'}, status=405)
+        return Response({"status": "Akcja cofnięta pomyślnie"})
 
-@login_required
-@csrf_exempt
-def api_element_detail(request, board_id, element_id):
-    board = get_object_or_404(Board, id=board_id)
-    element = get_object_or_404(Element, id=element_id, board=board)
+class TemplateViewSet(viewsets.ModelViewSet):
+    serializer_class = TemplateSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    # Sprawdzanie uprawnień
-    has_permission = (
-        board.owner == request.user or 
-        BoardPermission.objects.filter(
-            board=board, 
-            user=request.user, 
-            permission_type__in=['edit', 'admin']
-        ).exists()
-    )
+    def get_queryset(self):
+        # Zwraca szablony użytkownika oraz publiczne
+        user = self.request.user
+        return Template.objects.filter(
+            created_by=user
+        ) | Template.objects.filter(is_public=True)
 
-    if not has_permission:
-        return JsonResponse({'error': 'Brak uprawnień'}, status=403)
+    @action(detail=True, methods=['post'])
+    def apply(self, request, pk=None):
+        template = self.get_object()
+        board_id = request.data.get('board_id')
 
-    if request.method == 'GET':
-        data = {
-            'id': element.id,
-            'element_type': element.element_type,
-            'content': element.content,
-            'position_x': element.position_x,
-            'position_y': element.position_y,
-            'width': element.width,
-            'height': element.height,
-            'rotation': element.rotation,
-            'z_index': element.z_index,
-            'properties': element.properties,
-        }
-        return JsonResponse(data)
+        if not board_id:
+            return Response({"error": "Brak parametru board_id"}, 
+                           status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'PUT':
-        try:
-            data = json.loads(request.body)
+        board = get_object_or_404(Board, id=board_id)
 
-            # Aktualizacja właściwości elementu
-            if 'element_type' in data:
-                element.element_type = data['element_type']
-            if 'content' in data:
-                element.content = data['content']
-            if 'position_x' in data:
-                element.position_x = data['position_x']
-            if 'position_y' in data:
-                element.position_y = data['position_y']
-            if 'width' in data:
-                element.width = data['width']
-            if 'height' in data:
-                element.height = data['height']
-            if 'rotation' in data:
-                element.rotation = data['rotation']
-            if 'z_index' in data:
-                element.z_index = data['z_index']
-            if 'properties' in data:
-                element.properties = data['properties']
+        # Sprawdź uprawnienia do tablicy
+        has_permission = (
+            board.owner == request.user or 
+            BoardPermission.objects.filter(
+                board=board, 
+                user=request.user,
+                permission_type__in=['edit', 'admin']
+            ).exists()
+        )
 
-            element.save()
+        if not has_permission:
+            return Response({"error": "Brak uprawnień do tej tablicy"}, 
+                           status=status.HTTP_403_FORBIDDEN)
 
-            return JsonResponse({'message': 'Element został zaktualizowany'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
+        # Skopiuj elementy szablonu do tablicy
+        for template_element in template.elements.all():
+            element_data = ElementSerializer(template_element).data
+            element_data.pop('id', None)
+            element_data.pop('created_at', None)
+            element_data.pop('updated_at', None)
+            element_data.pop('created_by', None)
+            element_data.pop('board', None)
 
-    elif request.method == 'DELETE':
-        element.delete()
-        return JsonResponse({'message': 'Element został usunięty'})
+            Element.objects.create(
+                board=board,
+                created_by=request.user,
+                **element_data
+            )
 
-    return JsonResponse({'error': 'Nieprawidłowa metoda'}, status=405)
+        return Response({"status": "Szablon zastosowany"})
