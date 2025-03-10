@@ -8,6 +8,16 @@
               <h2 class="mb-0">Logowanie</h2>
             </div>
             <div class="card-body p-4">
+              <!-- Debug Info -->
+              <div class="alert alert-info mb-3">
+                <strong>Debug Info:</strong>
+                <p>Form Submitted: {{ formSubmitted }}</p>
+                <p>Loading State: {{ loading }}</p>
+                <p>Error: {{ error }}</p>
+                <button class="btn btn-sm btn-primary mt-2" @click="testNavigation">Test Navigation</button>
+                <button class="btn btn-sm btn-warning mt-2 ms-2" @click="testAction">Test Action</button>
+              </div>
+
               <div v-if="error" class="alert alert-danger" role="alert">
                 {{ error }}
               </div>
@@ -73,6 +83,24 @@
         </div>
       </div>
     </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true" ref="errorModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Error Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <pre class="bg-light p-3">{{ errorDetails }}</pre>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -80,7 +108,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
-import { toast } from 'vue3-toastify';
+import { Modal } from 'bootstrap';
 
 export default {
   name: 'LoginView',
@@ -89,57 +117,89 @@ export default {
     const store = useStore();
     const router = useRouter();
     const route = useRoute();
+    const errorModal = ref(null);
 
-    const username = ref('admin'); // Domyślne wartości dla szybkiego testowania
-    const password = ref('admin');
+    const username = ref('demo');
+    const password = ref('demo123');
     const showPassword = ref(false);
+    const formSubmitted = ref(false);
+    const errorDetails = ref('');
 
     const loading = computed(() => store.getters['auth/isLoading']);
     const error = computed(() => store.getters['auth/authError']);
 
     onMounted(() => {
-      console.log('LoginView został zamontowany', { router, route });
+      // Log that component was mounted
+      console.log('LoginView mounted', { router, route });
     });
 
     const handleLogin = async () => {
       try {
-        console.log('Formularz logowania wysłany', { username: username.value });
+        formSubmitted.value = true;
+        console.log('Login form submitted', { username: username.value });
 
-        // Sprawdź czy podano dane
-        if (!username.value || !password.value) {
-          toast.error('Wprowadź nazwę użytkownika i hasło');
-          return;
-        }
-
-        // Prawdziwa implementacja logowania z użyciem Vuex
         await store.dispatch('auth/login', {
           username: username.value,
           password: password.value
         });
 
-        // Podczas testów - można zamienić powyższe na prostsze uwierzytelnianie
-        // Tymczasowa implementacja logowania
-        if (username.value === 'admin' && password.value === 'admin') {
-          // Zapisz informacje użytkownika w localStorage
-          localStorage.setItem('user', JSON.stringify({ username: username.value }));
-          localStorage.setItem('isAuthenticated', 'true');
-          toast.success('Logowanie udane!');
+        // Log success
+        console.log('Login successful, redirecting...');
 
-          // Przekieruj do docelowej strony lub strony tablic
-          const redirectPath = route.query.redirect || '/boards';
-          console.log('Przekierowywanie do:', redirectPath);
+        // Redirect to the intended page or the boards page
+        const redirectPath = route.query.redirect || '/boards';
+        console.log('Redirecting to:', redirectPath);
 
-          router.push(redirectPath);
-        }
+        router.push(redirectPath);
       } catch (err) {
-        // Obsłuż błąd
-        console.error('Logowanie nie powiodło się:', err);
-        toast.error('Błąd logowania. Spróbuj ponownie.');
+        // Show detailed error
+        errorDetails.value = JSON.stringify(err, null, 2);
+        console.error('Login failed:', err);
+
+        // Show error modal
+        if (errorModal.value) {
+          const modal = new Modal(errorModal.value);
+          modal.show();
+        }
       }
     };
 
     const togglePasswordVisibility = () => {
       showPassword.value = !showPassword.value;
+    };
+
+    // Test functions
+    const testNavigation = () => {
+      try {
+        console.log('Testing navigation to /boards');
+        router.push('/boards');
+      } catch (err) {
+        console.error('Navigation test failed:', err);
+        errorDetails.value = JSON.stringify(err, null, 2);
+
+        if (errorModal.value) {
+          const modal = new Modal(errorModal.value);
+          modal.show();
+        }
+      }
+    };
+
+    const testAction = () => {
+      try {
+        console.log('Testing Vuex action');
+        store.dispatch('setAppLoading', true);
+        setTimeout(() => {
+          store.dispatch('setAppLoading', false);
+        }, 2000);
+      } catch (err) {
+        console.error('Action test failed:', err);
+        errorDetails.value = JSON.stringify(err, null, 2);
+
+        if (errorModal.value) {
+          const modal = new Modal(errorModal.value);
+          modal.show();
+        }
+      }
     };
 
     return {
@@ -148,8 +208,13 @@ export default {
       showPassword,
       loading,
       error,
+      formSubmitted,
+      errorDetails,
+      errorModal,
       handleLogin,
-      togglePasswordVisibility
+      togglePasswordVisibility,
+      testNavigation,
+      testAction
     };
   }
 };
