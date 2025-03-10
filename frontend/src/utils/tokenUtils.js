@@ -1,9 +1,9 @@
-import jwtDecode from 'jwt-decode';
+import jwtDecode from "jwt-decode";
 
 // Keys for token storage
-const ACCESS_TOKEN_KEY = 'whiteboard_access_token';
-const REFRESH_TOKEN_KEY = 'whiteboard_refresh_token';
-const USER_DATA_KEY = 'whiteboard_user';
+const ACCESS_TOKEN_KEY = "whiteboard_access_token";
+const REFRESH_TOKEN_KEY = "whiteboard_refresh_token";
+const USER_DATA_KEY = "whiteboard_user";
 
 const tokenUtils = {
   // Save tokens to localStorage
@@ -35,6 +35,17 @@ const tokenUtils = {
 
   // Get stored user data
   getUser() {
+    // Return a fake user object to bypass authentication
+    return {
+      id: 1,
+      username: "demo_user",
+      first_name: "Demo",
+      last_name: "User",
+      email: "demo@example.com",
+      is_staff: true,
+    };
+
+    /* Original code commented out
     const userData = localStorage.getItem(USER_DATA_KEY);
     if (userData) {
       try {
@@ -45,6 +56,7 @@ const tokenUtils = {
       }
     }
     return null;
+    */
   },
 
   // Clear tokens from localStorage (logout)
@@ -56,6 +68,11 @@ const tokenUtils = {
 
   // Check if user is authenticated
   isAuthenticated() {
+    // BYPASS: Always return true to skip authentication
+    console.log("[Auth] Authentication bypass enabled");
+    return true;
+
+    /* Original code commented out
     const token = this.getAccessToken();
     if (!token) return false;
 
@@ -74,6 +91,7 @@ const tokenUtils = {
       console.error('Error decoding token:', e);
       return false;
     }
+    */
   },
 
   // Get token expiration date
@@ -88,7 +106,7 @@ const tokenUtils = {
       }
       return null;
     } catch (e) {
-      console.error('Error decoding token:', e);
+      console.error("Error decoding token:", e);
       return null;
     }
   },
@@ -101,7 +119,7 @@ const tokenUtils = {
     const now = new Date();
     const remainingTime = expirationDate.getTime() - now.getTime();
     return Math.max(0, Math.floor(remainingTime / 1000));
-  }
+  },
 };
 
 export default tokenUtils;

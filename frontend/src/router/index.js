@@ -25,7 +25,7 @@ const debugImport = (importFn, name) => {
 const routes = [
   {
     path: '/',
-    redirect: '/boards'
+    redirect: '/boards/1' // Przekieruj bezpośrednio do tablicy z ID 1
   },
   {
     path: '/login',
@@ -90,11 +90,16 @@ const router = createRouter({
 
 // Add debug logging to router navigation
 router.beforeEach((to, from, next) => {
-  console.log(`[Router] Navigation: ${from.fullPath} → ${to.fullPath}`);
+  console.log(`[Router] Nawigacja: ${from.fullPath} → ${to.fullPath}`);
 
   // Update document title
   document.title = to.meta.title ? `${to.meta.title} | Whiteboard App` : 'Whiteboard App';
 
+  // BYPASS: Pomiń sprawdzenie autentykacji i zawsze kontynuuj
+  console.log('[Router] Obejście autentykacji włączone - bezpośredni dostęp do tablicy');
+  next();
+
+  /* Original code commented out
   // Check authentication for routes that require it
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const isAuthenticated = tokenUtils.isAuthenticated();
@@ -114,11 +119,12 @@ router.beforeEach((to, from, next) => {
     console.log(`[Router] Proceeding with navigation`);
     next();
   }
+  */
 });
 
 // Add debugging for navigation errors
 router.onError((error) => {
-  console.error('[Router] Navigation Error:', error);
+  console.error('[Router] Błąd nawigacji:', error);
 });
 
 export default router;

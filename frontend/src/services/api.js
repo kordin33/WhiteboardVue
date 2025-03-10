@@ -3,9 +3,21 @@ import { toast } from 'vue3-toastify';
 import router from '@/router';
 import tokenUtils from '@/utils/tokenUtils';
 
+// Określ bazowy URL - dostosuj według potrzeb
+// Opcja 1: Użyj tego samego hosta ale bez portu 4200
+const backendBaseUrl = `${window.location.protocol}//${window.location.hostname}`;
+
+// Opcja 2: Jeśli backend działa na innym porcie (np. 8000), odkomentuj poniższą linię
+// const backendBaseUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+
+// Opcja 3: Określ bezpośredni adres backendu
+// const backendBaseUrl = 'https://f74c5e62-798b-40db-a09f-0799fb00bfe0-00-1p14hehymb2qj.janeway.replit.dev';
+
+console.log(`Konfiguracja API: używam adresu bazowego ${backendBaseUrl}/api`);
+
 // Create axios instance
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: `${backendBaseUrl}/api`,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -20,6 +32,7 @@ api.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    console.log(`[API] Wysyłanie żądania do: ${config.baseURL}${config.url}`);
     return config;
   },
   error => {
@@ -35,10 +48,11 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
+    console.error(`[API] Błąd dla URL ${originalRequest ? originalRequest.url : 'nieznanego'}: `, error);
+
     // If error is 401 Unauthorized and not already retrying
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
       try {
         // Try to refresh the token
         const refreshToken = tokenUtils.getRefreshToken();
@@ -46,7 +60,9 @@ api.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        const response = await axios.post('/api/auth/refresh/', {
+        console.log(`[API] Próba odświeżenia tokenu`);
+
+        const response = await axios.post(`${backendBaseUrl}/api/auth/refresh/`, {
           refresh: refreshToken
         });
 
@@ -58,6 +74,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         // If refresh fails, logout user
+        console.error(`[API] Błąd odświeżania tokenu:`, refreshError);
         tokenUtils.clearTokens();
         toast.error('Sesja wygasła. Zaloguj się ponownie.');
         router.push('/login');
@@ -71,8 +88,9 @@ api.interceptors.response.use(
       const status = error.response.status;
       const data = error.response.data;
 
-      let errorMessage = 'Wystąpił błąd';
+      console.error(`[API] Odpowiedź serwera z błędem ${status}:`, data);
 
+      let errorMessage = 'Wystąpił błąd';
       if (status === 400) {
         // Bad Request - field validation errors
         if (data.detail) {
@@ -97,12 +115,13 @@ api.interceptors.response.use(
       }
     } else if (error.request) {
       // Request made but no response received
+      console.error(`[API] Błąd braku odpowiedzi:`, error.request);
       toast.error('Brak odpowiedzi serwera. Sprawdź połączenie.');
     } else {
       // Error setting up request
+      console.error(`[API] Błąd konfiguracji żądania:`, error.message);
       toast.error(`Błąd: ${error.message}`);
     }
-
     return Promise.reject(error);
   }
 );

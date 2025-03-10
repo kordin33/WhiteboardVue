@@ -1,3 +1,11 @@
+// Dodaj tę sekcję na początku pliku main.js
+import { installMockServices } from './services/mockData';
+
+// Zainstaluj zmodyfikowane serwisy
+const mockServices = installMockServices();
+console.log('[App] Zmodyfikowane serwisy zainicjalizowane');
+
+// Reszta oryginalnego pliku main.js
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';

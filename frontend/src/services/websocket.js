@@ -1,8 +1,6 @@
 import { toast } from 'vue3-toastify';
 import tokenUtils from '@/utils/tokenUtils';
 
-
-
 class WebSocketService {
   constructor() {
     this.socket = null;
@@ -31,9 +29,19 @@ class WebSocketService {
       return;
     }
 
+    // Użyj adresu backendu bezpośrednio zamiast window.location
+    // Zmień poniższy URL na adres twojego backendu - potencjalnie bez portu 4200
+    const backendHost = window.location.hostname;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws/boards/${boardId}/?token=${token}`;
+
+    // Opcja 1: Użyj tego samego hosta ale bez portu 4200 (jeśli backend jest na porcie 80/443)
+    const wsUrl = `${protocol}//${backendHost}/ws/boards/${boardId}/?token=${token}`;
+
+    // Opcja 2: Jeśli backend działa na innym porcie (np. 8000), odkomentuj poniższą linię
+    // const wsUrl = `${protocol}//${backendHost}:8000/ws/boards/${boardId}/?token=${token}`;
+
+    // Opcja 3: Użyj pełnego, jawnego adresu backendu
+    // const wsUrl = `wss://f74c5e62-798b-40db-a09f-0799fb00bfe0-00-1p14hehymb2qj.janeway.replit.dev/ws/boards/${boardId}/?token=${token}`;
 
     console.log(`Connecting to WebSocket: ${wsUrl}`);
 
@@ -47,8 +55,8 @@ class WebSocketService {
     } catch (error) {
       console.error('Error creating WebSocket:', error);
       toast.error('Błąd połączenia WebSocket', { autoClose: 3000 });
-        }
-      }
+    }
+  }
 
   disconnect() {
     if (this.socket) {
@@ -71,9 +79,9 @@ class WebSocketService {
     } else {
       console.error('WebSocket not connected, cannot send message');
       toast.error('Błąd połączenia WebSocket. Odświerz stronę.', { autoClose: 3000 });
-          return false;
-        }
-      }
+      return false;
+    }
+  }
 
   addListener(eventType, callback) {
     if (this.listeners[eventType]) {
@@ -134,7 +142,7 @@ class WebSocketService {
   _onError(error) {
     console.error('WebSocket error:', error);
     toast.error('Błąd połączenia WebSocket', { autoClose: 3000 });
-    }
+  }
 
   _attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -155,8 +163,8 @@ class WebSocketService {
     } else {
       console.error('Max reconnection attempts reached');
       toast.error('Nie można połączyć z serwerem. Odśwież stronę.', { autoClose: 3000 });
-        }
-      }
+    }
+  }
 
   _notifyListeners(eventType, data) {
     if (this.listeners[eventType]) {

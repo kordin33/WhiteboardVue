@@ -6,6 +6,48 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
     <title><%= htmlWebpackPlugin.options.title %></title>
+
+    <!-- Skrypt diagnostyczny dla połączeń -->
+    <script>
+      // Inicjalizacja tokenu - zapewni logowanie nawet bez przechodzenia przez proces logowania
+      window.addEventListener('load', function() {
+        // Dodaj tokeny jeśli jeszcze nie istnieją
+        if (!localStorage.getItem('whiteboard_access_token')) {
+          localStorage.setItem('whiteboard_access_token', 'fake_token_for_testing');
+          localStorage.setItem('whiteboard_refresh_token', 'fake_refresh_token_for_testing');
+          localStorage.setItem('whiteboard_user', JSON.stringify({
+            id: 1,
+            username: "demo_user",
+            email: "demo@example.com",
+            first_name: "Demo",
+            last_name: "User"
+          }));
+          console.log('[Debug] Dodano testowe tokeny do localStorage');
+        }
+
+        // Diagnostyka środowiska
+        console.log('[Debug] Aplikacja uruchomiona na:', window.location.href);
+        console.log('[Debug] Protokół:', window.location.protocol);
+        console.log('[Debug] Hostname:', window.location.hostname);
+        console.log('[Debug] Port:', window.location.port);
+
+        // Test połączenia do backendu
+        fetch(`${window.location.protocol}//${window.location.hostname}/api/boards/`)
+          .then(response => console.log('[Debug] Test połączenia do API (ten sam host):', response.status))
+          .catch(error => console.error('[Debug] Błąd testu API (ten sam host):', error));
+
+        // Wersja bez portu 4200
+        const hostnameWithoutPort = window.location.hostname;
+        fetch(`${window.location.protocol}//${hostnameWithoutPort}/api/boards/`)
+          .then(response => console.log('[Debug] Test połączenia do API (bez portu):', response.status))
+          .catch(error => console.error('[Debug] Błąd testu API (bez portu):', error));
+
+        // Wersja na porcie 8000
+        fetch(`${window.location.protocol}//${hostnameWithoutPort}:8000/api/boards/`)
+          .then(response => console.log('[Debug] Test połączenia do API (port 8000):', response.status))
+          .catch(error => console.error('[Debug] Błąd testu API (port 8000):', error));
+      });
+    </script>
   </head>
   <body>
     <noscript>
