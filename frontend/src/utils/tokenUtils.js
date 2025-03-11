@@ -42,7 +42,7 @@ const tokenUtils = {
       first_name: "Demo",
       last_name: "User",
       email: "demo@example.com",
-      is_staff: true,
+      
     };
 
     /* Original code commented out

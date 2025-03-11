@@ -56,6 +56,14 @@
             </div>
 
             <div class="board-actions">
+              <!-- Przyciski Import/Export -->
+              <button class="btn btn-outline-primary me-2" @click="showImportPanel">
+                <i class="bi bi-upload me-1"></i> Import
+              </button>
+              <button class="btn btn-outline-primary me-2" @click="showExportPanel">
+                <i class="bi bi-download me-1"></i> Eksport
+              </button>
+
               <button class="btn btn-outline-primary me-2" title="Zapisz" @click="saveBoard">
                 <i class="bi bi-save"></i>
               </button>
@@ -169,6 +177,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Panel Import/Export -->
+    <ImportExportPanel
+      :visible="showPanel"
+      :mode="panelMode"
+      :board-data="exportData"
+      @close="hidePanel"
+      @import-board="importBoard"
+    />
   </div>
 </template>
 
@@ -177,10 +194,14 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import { Modal } from 'bootstrap';
+import { toast } from 'vue3-toastify';
 import BoardCanvas from '@/components/board/Canvas.vue';
 import Toolbar from '@/components/board/Toolbar.vue';
 import ElementProperties from '@/components/board/ElementProperties.vue';
+import ImportExportPanel from '@/components/board/ImportExportPanel.vue';
 import websocketService from '@/services/websocket';
+import boardService from '@/services/boardService';
+import elementService from '@/services/elementService';
 
 export default {
   name: 'BoardDetailView',
@@ -188,7 +209,8 @@ export default {
   components: {
     BoardCanvas,
     Toolbar,
-    ElementProperties
+    ElementProperties,
+    ImportExportPanel
   },
 
   setup() {
@@ -221,6 +243,11 @@ export default {
     const penColor = ref('#000000');
     const showGrid = ref(true);
     const gridSize = ref(20);
+
+    // Import/Export panel state
+    const showPanel = ref(false);
+    const panelMode = ref('export');
+    const exportData = ref(null);
 
     // Permissions
     const canEditBoard = computed(() => {
@@ -428,6 +455,53 @@ export default {
       store.dispatch('elements/clearSelection');
     };
 
+    // Import/Export functions
+    const showImportPanel = () => {
+      panelMode.value = 'import';
+      showPanel.value = true;
+    };
+
+    const showExportPanel = async () => {
+      try {
+        loading.value = true;
+        const data = await boardService.exportBoardState(boardId.value);
+        exportData.value = data;
+        panelMode.value = 'export';
+        showPanel.value = true;
+      } catch (err) {
+        console.error('Nie udało się wyeksportować tablicy:', err);
+        toast.error('Nie udało się wyeksportować danych tablicy');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const hidePanel = () => {
+      showPanel.value = false;
+    };
+
+    const importBoard = async (data) => {
+      try {
+        loading.value = true;
+        await boardService.importBoardState(boardId.value, data);
+        await loadBoard(); // Załaduj tablicę ponownie po imporcie
+
+        // Odśwież canvas z nowymi elementami
+        if (canvas.value && canvas.value.loadElements) {
+          const elements = await boardService.getBoardElements(boardId.value);
+          canvas.value.loadElements(elements);
+        }
+
+        toast.success('Tablica została zaimportowana pomyślnie');
+        hidePanel();
+      } catch (err) {
+        console.error('Nie udało się zaimportować tablicy:', err);
+        toast.error('Nie udało się zaimportować danych tablicy');
+      } finally {
+        loading.value = false;
+      }
+    };
+
     // Lifecycle hooks
     onMounted(() => {
       // Initialize WebSocket
@@ -468,6 +542,11 @@ export default {
       showGrid,
       gridSize,
 
+      // Import/Export panel
+      showPanel,
+      panelMode,
+      exportData,
+
       // Computed
       canEditBoard,
       isOwner,
@@ -495,7 +574,13 @@ export default {
       handleElementCreated,
       handleElementUpdated,
       handleElementDeleted,
-      deselectElement
+      deselectElement,
+
+      // Import/Export methods
+      showImportPanel,
+      showExportPanel,
+      hidePanel,
+      importBoard
     };
   }
 };

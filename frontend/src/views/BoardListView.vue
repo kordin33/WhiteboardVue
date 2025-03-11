@@ -352,26 +352,30 @@ export default {
       }
     };
 
-    // Board CRUD operations
     const createBoard = async () => {
       if (!newBoardTitle.value) return;
 
       createLoading.value = true;
 
       try {
+        // Dodaj więcej logów
+        console.log("Wysyłanie żądania utworzenia tablicy:", { title: newBoardTitle.value });
+
         const result = await store.dispatch('boards/createBoard', {
           title: newBoardTitle.value
         });
 
-        // Close modal
+        console.log("Odpowiedź serwera:", result);
+
+        // Zamknij modal po utworzeniu
         const modalElement = createBoardModal.value;
         if (modalElement) {
           const modal = Modal.getInstance(modalElement);
           if (modal) modal.hide();
         }
 
-        // Redirect to the new board
-        router.push(`/boards/${result.id}`);
+        // Załaduj tablice na nowo zamiast przekierowywać
+        await loadBoards();
       } catch (error) {
         console.error('Failed to create board:', error);
       } finally {

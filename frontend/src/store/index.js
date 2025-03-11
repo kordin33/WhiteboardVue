@@ -1,58 +1,57 @@
-import { createStore } from 'vuex';
-import auth from './modules/auth';
-import boards from './modules/boards';
-import elements from './modules/elements';
+// Zastąp zawartość pliku frontend/src/router/index.js
 
-export default createStore({
-  state: {
-    appLoading: false,
-    darkMode: localStorage.getItem('darkMode') === 'true',
-    sidebarOpen: true
+import { createRouter, createWebHistory } from 'vue-router';
+
+// Komponenty ładowane leniwie dla lepszej wydajności
+const BoardListView = () => import('@/views/BoardListView.vue');
+const BoardDetailView = () => import('@/views/BoardDetailView.vue');
+const NotFoundView = () => import('@/views/NotFoundView.vue');
+
+const routes = [
+  {
+    path: '/',
+    redirect: '/boards'
   },
-  getters: {
-    isAppLoading: state => state.appLoading,
-    isDarkMode: state => state.darkMode,
-    isSidebarOpen: state => state.sidebarOpen
-  },
-  mutations: {
-    SET_APP_LOADING(state, isLoading) {
-      state.appLoading = isLoading;
-    },
-    TOGGLE_DARK_MODE(state) {
-      state.darkMode = !state.darkMode;
-      localStorage.setItem('darkMode', state.darkMode);
-    },
-    SET_DARK_MODE(state, isDark) {
-      state.darkMode = isDark;
-      localStorage.setItem('darkMode', state.darkMode);
-    },
-    TOGGLE_SIDEBAR(state) {
-      state.sidebarOpen = !state.sidebarOpen;
-    },
-    SET_SIDEBAR_OPEN(state, isOpen) {
-      state.sidebarOpen = isOpen;
+  {
+    path: '/boards',
+    name: 'boards',
+    component: BoardListView,
+    meta: { 
+      title: 'Moje tablice'
     }
   },
-  actions: {
-    setAppLoading({ commit }, isLoading) {
-      commit('SET_APP_LOADING', isLoading);
-    },
-    toggleDarkMode({ commit }) {
-      commit('TOGGLE_DARK_MODE');
-    },
-    setDarkMode({ commit }, isDark) {
-      commit('SET_DARK_MODE', isDark);
-    },
-    toggleSidebar({ commit }) {
-      commit('TOGGLE_SIDEBAR');
-    },
-    setSidebarOpen({ commit }, isOpen) {
-      commit('SET_SIDEBAR_OPEN', isOpen);
+  {
+    path: '/boards/:id',
+    name: 'board-detail',
+    component: BoardDetailView,
+    props: true,
+    meta: { 
+      title: 'Whiteboard'
     }
   },
-  modules: {
-    auth,
-    boards,
-    elements
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: NotFoundView,
+    meta: { 
+      title: 'Strona nie znaleziona'
+    }
   }
+];
+
+const router = createRouter({
+  history: createWebHistory(process.env.BASE_URL),
+  routes
 });
+
+// Dodaj debugowe logowanie do nawigacji routera
+router.beforeEach((to, from, next) => {
+  console.log(`[Router] Nawigacja: ${from.fullPath} → ${to.fullPath}`);
+
+  // Aktualizuj tytuł dokumentu
+  document.title = to.meta.title ? `${to.meta.title} | Whiteboard App` : 'Whiteboard App';
+
+  next();
+});
+
+export default router;

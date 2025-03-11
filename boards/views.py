@@ -11,7 +11,7 @@ from .permissions import IsBoardOwnerOrHasPermission, IsElementBoardOwnerOrHasPe
 
 class BoardViewSet(viewsets.ModelViewSet):
     serializer_class = BoardSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         user = self.request.user
@@ -58,7 +58,7 @@ class BoardViewSet(viewsets.ModelViewSet):
 
 class ElementViewSet(viewsets.ModelViewSet):
     serializer_class = ElementSerializer
-    permission_classes = [permissions.IsAuthenticated, IsElementBoardOwnerOrHasPermission]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         board_id = self.kwargs.get('board_pk')
@@ -153,7 +153,7 @@ class ElementViewSet(viewsets.ModelViewSet):
 
 class TemplateViewSet(viewsets.ModelViewSet):
     serializer_class = TemplateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         # Zwraca szablony użytkownika oraz publiczne

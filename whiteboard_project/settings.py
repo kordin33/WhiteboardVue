@@ -2,7 +2,34 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+# W settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'channels': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
 SECRET_KEY = 'django-insecure-your-secret-key-here'
 DEBUG = True
 ALLOWED_HOSTS = ['*', '.replit.dev', '.repl.co']
@@ -36,9 +63,43 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# Konfiguracja CORS - podczas rozwoju zezwalamy na wszystkie źródła
+# Konfiguracja CORS - rozbudowana
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+# Jawnie określamy dozwolone domeny - dodaj swój adres frontendu z portem
+CORS_ALLOWED_ORIGINS = [
+    'https://f74c5e62-798b-40db-a09f-0799fb00bfe0-00-1p14hehymb2qj.janeway.replit.dev',
+    'https://f74c5e62-798b-40db-a09f-0799fb00bfe0-00-1p14hehymb2qj.janeway.replit.dev:4200',
+    'https://f74c5e62-798b-40db-a09f-0799fb00bfe0-00-1p14hehymb2qj.janeway.replit.dev:8080',
+    'http://localhost:8080',
+    'http://localhost:4200',
+]
+
+# Dozwolone nagłówki i metody
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Pozwól na niestandardowe nagłówki i cookie
+CORS_EXPOSE_HEADERS = ['Content-Type', 'Authorization']
 
 # REST Framework
 REST_FRAMEWORK = {
@@ -47,7 +108,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
 }
 

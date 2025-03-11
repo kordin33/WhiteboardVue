@@ -4,6 +4,7 @@ from django.shortcuts import render
 from django.conf import settings
 from django.views.generic import TemplateView
 from django.views.decorators.cache import never_cache
+from django.utils.decorators import method_decorator
 
 # Wzór do dopasowania plików JS i CSS w katalogu dist Vue
 CSS_PATTERN = re.compile(r'^css/.*\.css$')
@@ -17,7 +18,7 @@ class VueAppView(TemplateView):
     """
     template_name = 'vue_index.html'
 
-    @never_cache
+    # Usunięto dekorator @never_cache stąd
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
 

@@ -1,6 +1,11 @@
-from django.urls import re_path
-from . import consumers
+from django.urls import path, re_path
+from .consumers import BoardConsumer
 
+# Trasy WebSocket
 websocket_urlpatterns = [
-    re_path(r'ws/boards/(?P<board_id>\w+)/$', consumers.BoardConsumer.as_asgi()),
+    # Ogólny adres dla wszystkich połączeń WebSocket do tablicy
+    path('ws/boards/<int:board_id>/', BoardConsumer.as_asgi()),
+
+    # Obsługa różnych akcji na tablicy (opcjonalnie)
+    # path('ws/boards/<int:board_id>/elements/', ElementConsumer.as_asgi()),
 ]

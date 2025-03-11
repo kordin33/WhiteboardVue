@@ -67,8 +67,7 @@ class LoginView(views.APIView):
         return Response({'error': 'Niepoprawne dane logowania'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class UserDetailsView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
+    permission_classes = [permissions.AllowAny]
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)

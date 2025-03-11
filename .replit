@@ -19,6 +19,10 @@ deploymentTarget = "gce"
 build = ["sh", "-c", "cd frontend && npm install && npm run build && mkdir -p ../static/vue && cp -r dist/* ../static/vue/"]
 
 [[ports]]
+localPort = 80
+externalPort = 5000
+
+[[ports]]
 localPort = 3000
 externalPort = 3000
 
@@ -65,7 +69,6 @@ localPort = 8088
 externalPort = 6000
 
 [workflows]
-runButton = "Run"
 
 [[workflows.workflow]]
 name = "Run"

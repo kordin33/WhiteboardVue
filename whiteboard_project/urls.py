@@ -10,8 +10,8 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),  # DRF login
     path('accounts/', include('django.contrib.auth.urls')),  # Auth views
 
-    # Original Django views (to keep backwards compatibility)
-    path('django/', include('boards.urls')),
+    # Zakomentowane, aby uniknąć błędu z rest_framework_nested
+    # path('django/', include('boards.urls')),
 
     # Vue.js app - catch all routes for SPA
     re_path(r'^$', vue_app_view, name='vue_app'),

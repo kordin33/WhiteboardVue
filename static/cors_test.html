@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test CORS</title>
+    <script>
+        // Test połączenia API
+        function testAPI() {
+            const url = document.getElementById('apiUrl').value;
+            const resultDiv = document.getElementById('apiResult');
+
+            resultDiv.innerHTML = "Testowanie połączenia...";
+
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                resultDiv.innerHTML = `Sukces! Odpowiedź: ${JSON.stringify(data, null, 2)}`;
+                resultDiv.className = "success";
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `Błąd: ${error.message}`;
+                resultDiv.className = "error";
+                console.error('Error:', error);
+            });
+        }
+
+        // Test połączenia WebSocket
+        let socket = null;
+
+        function testWebSocket() {
+            const url = document.getElementById('wsUrl').value;
+            const resultDiv = document.getElementById('wsResult');
+
+            // Zamknij poprzednie połączenie jeśli istnieje
+            if (socket) {
+                socket.close();
+            }
+
+            resultDiv.innerHTML = "Próba połączenia z WebSocket...";
+
+            try {
+                socket = new WebSocket(url);
+
+                socket.onopen = function(e) {
+                    resultDiv.innerHTML = "Połączenie WebSocket nawiązane!";
+                    resultDiv.className = "success";
+                };
+
+                socket.onmessage = function(event) {
+                    resultDiv.innerHTML += `<br>Otrzymano wiadomość: ${event.data}`;
+                };
+
+                socket.onclose = function(event) {
+                    if (event.wasClean) {
+                        resultDiv.innerHTML += `<br>Połączenie zamknięte poprawnie, kod=${event.code}`;
+                    } else {
+                        resultDiv.innerHTML += `<br>Połączenie przerwane, kod=${event.code}`;
+                        resultDiv.className = "error";
+                    }
+                };
+
+                socket.onerror = function(error) {
+                    resultDiv.innerHTML = `Błąd WebSocket`;
+                    resultDiv.className = "error";
+                    console.error('WebSocket error:', error);
+                };
+            } catch (e) {
+                resultDiv.innerHTML = `Błąd tworzenia połączenia WebSocket: ${e.message}`;
+                resultDiv.className = "error";
+                console.error('WebSocket creation error:', e);
+            }
+        }
+
+        function closeWebSocket() {
+            if (socket) {
+                socket.close();
+                document.getElementById('wsResult').innerHTML += "<br>Zamknięto połączenie";
+            } else {
+                document.getElementById('wsResult').innerHTML = "Brak aktywnego połączenia";
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        input[type="text"] {
+            width: 90%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 40px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test CORS - Sprawdzenie połączenia API i WebSocket</h1>
+
+    <div class="test-section">
+        <h2>Test API</h2>
+        <p>Wprowadź URL API do przetestowania:</p>
+        <input type="text" id="apiUrl" value="https://f74c5e62-798b-40db-a09f-0799fb00bfe0-00-1p14hehymb2qj.janeway.replit.dev:8000/api/boards/" />
+        <button onclick="testAPI()">Testuj API</button>
+        <div id="apiResult" class="result">Wyniki testu API pojawią się tutaj...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test WebSocket</h2>
+        <p>Wprowadź URL WebSocket do przetestowania:</p>
+        <input type="text" id="wsUrl" value="wss://f74c5e62-798b-40db-a09f-0799fb00bfe0-00-1p14hehymb2qj.janeway.replit.dev:8000/ws/boards/1/?token=fake_token" />
+        <button onclick="testWebSocket()">Połącz z WebSocket</button>
+        <button onclick="closeWebSocket()">Zamknij połączenie</button>
+        <div id="wsResult" class="result">Wyniki testu WebSocket pojawią się tutaj...</div>
+    </div>
+</body>
+</html>

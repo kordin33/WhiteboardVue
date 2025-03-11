@@ -1,28 +1,16 @@
+# Zastąp zawartość pliku boards/consumers.py
+
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import Board, Element, BoardPermission
-from django.contrib.auth.models import User
+from .models import Board, Element
 
 class BoardConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.board_id = self.scope['url_route']['kwargs']['board_id']
         self.board_group_name = f'board_{self.board_id}'
 
-        # Sprawdzenie uprawnień użytkownika
-        user = self.scope['user']
-        if user.is_anonymous:
-            # Odrzucanie połączenia dla niezalogowanych użytkowników
-            await self.close()
-            return
-
-        has_permission = await self.check_permission(user.id, self.board_id)
-        if not has_permission:
-            # Odrzucanie połączenia dla użytkowników bez uprawnień
-            await self.close()
-            return
-
-        # Dołączenie do grupy
+        # Akceptuj połączenie bez sprawdzania uwierzytelnienia
         await self.channel_layer.group_add(
             self.board_group_name,
             self.channel_name
@@ -31,7 +19,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        # Opuszczenie grupy
+        # Opuszczenie grupy tablicy
         await self.channel_layer.group_discard(
             self.board_group_name,
             self.channel_name
@@ -52,8 +40,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'board_event',
                     'action': 'create_element',
-                    'element': {**element_data, 'id': element_id},
-                    'user_id': self.scope['user'].id
+                    'element': {**element_data, 'id': element_id}
                 }
             )
 
@@ -62,14 +49,12 @@ class BoardConsumer(AsyncWebsocketConsumer):
             success = await self.update_element(element_data)
 
             if success:
-                # Wysyłanie informacji do wszystkich członków grupy
                 await self.channel_layer.group_send(
                     self.board_group_name,
                     {
                         'type': 'board_event',
                         'action': 'update_element',
-                        'element': element_data,
-                        'user_id': self.scope['user'].id
+                        'element': element_data
                     }
                 )
 
@@ -78,47 +63,23 @@ class BoardConsumer(AsyncWebsocketConsumer):
             success = await self.delete_element(element_id)
 
             if success:
-                # Wysyłanie informacji do wszystkich członków grupy
                 await self.channel_layer.group_send(
                     self.board_group_name,
                     {
                         'type': 'board_event',
                         'action': 'delete_element',
-                        'element_id': element_id,
-                        'user_id': self.scope['user'].id
+                        'element_id': element_id
                     }
                 )
 
     # Obsługa zdarzeń z kanału
     async def board_event(self, event):
         # Wysyłanie wiadomości do WebSocket
-        # Nie wysyłamy z powrotem do nadawcy operacji
-        if event.get('user_id') != self.scope['user'].id:
-            await self.send(text_data=json.dumps({
-                'action': event['action'],
-                'element': event.get('element'),
-                'element_id': event.get('element_id')
-            }))
-
-    @database_sync_to_async
-    def check_permission(self, user_id, board_id):
-        try:
-            user = User.objects.get(id=user_id)
-            board = Board.objects.get(id=board_id)
-
-            # Właściciel ma zawsze uprawnienia
-            if board.owner_id == user_id:
-                return True
-
-            # Sprawdzanie uprawnień dla innych użytkowników
-            return BoardPermission.objects.filter(
-                board=board,
-                user=user,
-                permission_type__in=['view', 'edit', 'admin']
-            ).exists()
-
-        except (User.DoesNotExist, Board.DoesNotExist):
-            return False
+        await self.send(text_data=json.dumps({
+            'action': event['action'],
+            'element': event.get('element'),
+            'element_id': event.get('element_id')
+        }))
 
     @database_sync_to_async
     def create_element(self, element_data):
@@ -134,7 +95,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
             rotation=element_data.get('rotation', 0),
             z_index=element_data.get('z_index', 0),
             properties=element_data.get('properties', {}),
-            created_by=self.scope['user']
+            path=element_data.get('path')
         )
         return element.id
 
@@ -161,6 +122,8 @@ class BoardConsumer(AsyncWebsocketConsumer):
                 element.z_index = element_data['z_index']
             if 'properties' in element_data:
                 element.properties = element_data['properties']
+            if 'path' in element_data:
+                element.path = element_data['path']
 
             element.save()
             return True
