@@ -1,22 +1,38 @@
 // Zastąp zawartość pliku frontend/src/services/api.js
 
+// Konfiguracja bazowa dla axios z automatycznym wykrywaniem adresu serwera
 import axios from 'axios';
-import { toast } from 'vue3-toastify';
 
-// Zdefiniuj bazowy URL - dostosuj według potrzeb
-const backendBaseUrl = `${window.location.protocol}//${window.location.hostname}`;
+// Auto-wykrywanie bazowego URL na podstawie bieżącego adresu
+const getBaseUrl = () => {
+  const url = window.location.origin;
+  console.log('Wykryty adres serwera:', url);
+  return url + '/api';
+};
 
-console.log(`Konfiguracja API: używam adresu bazowego ${backendBaseUrl}/api`);
-
-// Utwórz instancję axios
+// Tworzenie instancji axios z opcjami domyślnymi
 const api = axios.create({
-  baseURL: `${backendBaseUrl}/api`,
+  baseURL: getBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
 });
+
+// Pomocna funkcja do debugowania połączeń
+const testConnection = async () => {
+  console.log('Testowanie połączenia z API...');
+  try {
+    // Próbujemy prostego endpointu, który powinien działać
+    const response = await api.get('/boards/');
+    console.log('Test połączenia udany!', response.data);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error('Test połączenia nieudany:', error);
+    return { success: false, error };
+  }
+};
 
 // Dodaj interceptor żądań do logowania
 api.interceptors.request.use(
@@ -38,42 +54,19 @@ api.interceptors.response.use(
     // Obsługa błędów
     if (error.response) {
       // Serwer odpowiedział błędem
-      const status = error.response.status;
-      const data = error.response.data;
-
-      console.error(`[API] Odpowiedź serwera z błędem ${status}:`, data);
-
-      let errorMessage = 'Wystąpił błąd';
-      if (status === 400) {
-        // Bad Request - błędy walidacji pól
-        if (data.detail) {
-          errorMessage = data.detail;
-        } else {
-          // Pobierz pierwszy komunikat błędu walidacji
-          const firstField = Object.keys(data)[0];
-          if (firstField && data[firstField]) {
-            errorMessage = `${firstField}: ${data[firstField]}`;
-          }
-        }
-        toast.error(errorMessage);
-      } else if (status === 404) {
-        // Not Found
-        toast.error('Zasób nie został znaleziony');
-      } else if (status === 500) {
-        // Server Error
-        toast.error('Błąd serwera. Spróbuj ponownie później.');
-      }
+      console.error(`[API] Odpowiedź serwera z błędem ${error.response.status}:`, error.response.data);
     } else if (error.request) {
       // Żądanie wysłane, ale brak odpowiedzi
-      console.error(`[API] Brak odpowiedzi:`, error.request);
-      toast.error('Brak odpowiedzi serwera. Sprawdź połączenie.');
+      console.error(`[API] Brak odpowiedzi od serwera:`, error.request);
+      console.log('Sprawdź, czy backend jest uruchomiony i dostępny na adresie:', getBaseUrl());
     } else {
       // Błąd przy ustawianiu żądania
       console.error(`[API] Błąd konfiguracji żądania:`, error.message);
-      toast.error(`Błąd: ${error.message}`);
     }
     return Promise.reject(error);
   }
 );
 
+// Eksportuj instancję api oraz funkcję testową
+export { api, testConnection };
 export default api;

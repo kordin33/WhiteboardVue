@@ -1,3 +1,5 @@
+# Zastąp zawartość pliku whiteboard_project/asgi.py
+
 """
 ASGI config for whiteboard_project.
 """
@@ -16,18 +18,13 @@ django.setup()
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 import boards.routing
-from boards.middleware import WebSocketCORSMiddleware, TokenAuthMiddleware
 
 # Initialize application
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": WebSocketCORSMiddleware(  # Add CORS middleware first
-        TokenAuthMiddleware(  # Then token auth middleware
-            AuthMiddlewareStack(
-                URLRouter(
-                    boards.routing.websocket_urlpatterns
-                )
-            )
+    "websocket": AuthMiddlewareStack(
+        URLRouter(
+            boards.routing.websocket_urlpatterns
         )
     ),
 })

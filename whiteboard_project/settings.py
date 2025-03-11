@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     'corsheaders',  # CORS headers
     'boards',    # Nasza aplikacja tablic
 ]
-
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Dodaj na początku dla CORS
     'django.middleware.security.SecurityMiddleware',
@@ -103,10 +102,7 @@ CORS_EXPOSE_HEADERS = ['Content-Type', 'Authorization']
 
 # REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
+    
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],

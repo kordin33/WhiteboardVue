@@ -11,7 +11,6 @@
     </main>
 
     <AppLoader v-if="isAppLoading" />
-    <DebugHelper />
   </div>
 </template>
 
@@ -20,15 +19,14 @@ import { onMounted, computed, watch } from 'vue';
 import { useStore } from 'vuex';
 import Navbar from '@/components/common/Navbar.vue';
 import AppLoader from '@/components/common/AppLoader.vue';
-import DebugHelper from '@/components/common/DebugHelper.vue';
+import api from '@/services/api';
 
 export default {
   name: 'App',
 
   components: {
     Navbar,
-    AppLoader,
-    DebugHelper
+    AppLoader
   },
 
   setup() {
@@ -37,12 +35,31 @@ export default {
     const isAppLoading = computed(() => store.getters.isAppLoading);
     const isDarkMode = computed(() => store.getters.isDarkMode);
 
-    // Initialize user authentication state
-    const initAuth = async () => {
+    // Inicjalizacja tablicy przy starcie
+    const initializeBoard = async () => {
       try {
-        await store.dispatch('auth/initAuth');
+        store.dispatch('setAppLoading', true);
+        console.log('Sprawdzanie czy tablica istnieje...');
+
+        try {
+          // Sprawdź czy tablica o ID=1 istnieje
+          const response = await api.get('/boards/1/');
+          console.log('Znaleziono istniejącą tablicę:', response.data);
+          return response.data.id;
+        } catch (error) {
+          console.log('Tworzenie nowej tablicy...');
+          // Utwórz nową tablicę
+          const newBoardResponse = await api.post('/boards/', {
+            title: 'Whiteboard'
+          });
+          console.log('Utworzono nową tablicę:', newBoardResponse.data);
+          return newBoardResponse.data.id;
+        }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('Błąd podczas inicjalizacji tablicy:', error);
+        return 1; // Domyślne ID w przypadku błędu
+      } finally {
+        store.dispatch('setAppLoading', false);
       }
     };
 
@@ -55,8 +72,13 @@ export default {
       }
     }, { immediate: true });
 
-    onMounted(() => {
-      initAuth();
+    onMounted(async () => {
+      // Inicjalizacja motywu
+      store.dispatch('initTheme');
+
+      // Inicjalizacja tablicy
+      const boardId = await initializeBoard();
+      console.log('Tablica gotowa, ID:', boardId);
     });
 
     return {

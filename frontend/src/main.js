@@ -1,3 +1,5 @@
+// Zastąp zawartość pliku frontend/src/main.js
+
 // Dodaj tę sekcję na początku pliku main.js
 import { installMockServices } from './services/mockData';
 

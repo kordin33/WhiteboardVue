@@ -1,4 +1,4 @@
-# Zastąp zawartość pliku boards/models.py
+# Zastąp całą zawartość pliku boards/models.py
 
 from django.db import models
 
@@ -6,8 +6,6 @@ class Board(models.Model):
     title = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # Usunięto pole owner
-    # Dodano pole do przechowywania stanu tablicy
     serialized_state = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -128,7 +126,6 @@ class Element(models.Model):
     properties = models.JSONField(default=dict, blank=True)  # Dla dodatkowych właściwości
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # Usunięto pole created_by
 
     def __str__(self):
         return f"{self.element_type} on {self.board.title}"

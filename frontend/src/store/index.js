@@ -1,57 +1,53 @@
-// Zastąp zawartość pliku frontend/src/router/index.js
+// Zastąp zawartość pliku frontend/src/store/index.js
 
-import { createRouter, createWebHistory } from 'vue-router';
+import { createStore } from 'vuex';
 
-// Komponenty ładowane leniwie dla lepszej wydajności
-const BoardListView = () => import('@/views/BoardListView.vue');
-const BoardDetailView = () => import('@/views/BoardDetailView.vue');
-const NotFoundView = () => import('@/views/NotFoundView.vue');
+// Import modules
+import boards from './modules/boards';
+import elements from './modules/elements';
 
-const routes = [
-  {
-    path: '/',
-    redirect: '/boards'
+export default createStore({
+  state: {
+    appLoading: false,
+    darkMode: false,
   },
-  {
-    path: '/boards',
-    name: 'boards',
-    component: BoardListView,
-    meta: { 
-      title: 'Moje tablice'
+  getters: {
+    isAppLoading: (state) => state.appLoading,
+    isDarkMode: (state) => state.darkMode,
+  },
+  mutations: {
+    SET_APP_LOADING(state, isLoading) {
+      state.appLoading = isLoading;
+    },
+    TOGGLE_DARK_MODE(state) {
+      state.darkMode = !state.darkMode;
+      // Save preference
+      localStorage.setItem('darkMode', state.darkMode ? '1' : '0');
+    },
+    INIT_DARK_MODE(state) {
+      const savedMode = localStorage.getItem('darkMode');
+      if (savedMode !== null) {
+        state.darkMode = savedMode === '1';
+      } else {
+        // Check user preference from OS
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        state.darkMode = prefersDark;
+      }
     }
   },
-  {
-    path: '/boards/:id',
-    name: 'board-detail',
-    component: BoardDetailView,
-    props: true,
-    meta: { 
-      title: 'Whiteboard'
+  actions: {
+    setAppLoading({ commit }, isLoading) {
+      commit('SET_APP_LOADING', isLoading);
+    },
+    toggleDarkMode({ commit }) {
+      commit('TOGGLE_DARK_MODE');
+    },
+    initTheme({ commit }) {
+      commit('INIT_DARK_MODE');
     }
   },
-  {
-    path: '/:pathMatch(.*)*',
-    name: 'not-found',
-    component: NotFoundView,
-    meta: { 
-      title: 'Strona nie znaleziona'
-    }
+  modules: {
+    boards,
+    elements
   }
-];
-
-const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
-  routes
 });
-
-// Dodaj debugowe logowanie do nawigacji routera
-router.beforeEach((to, from, next) => {
-  console.log(`[Router] Nawigacja: ${from.fullPath} → ${to.fullPath}`);
-
-  // Aktualizuj tytuł dokumentu
-  document.title = to.meta.title ? `${to.meta.title} | Whiteboard App` : 'Whiteboard App';
-
-  next();
-});
-
-export default router;

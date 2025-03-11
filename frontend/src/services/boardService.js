@@ -1,4 +1,4 @@
-// Utwórz nowy plik frontend/src/services/boardService.js
+// Zastąp zawartość pliku frontend/src/services/boardService.js
 
 import api from './api';
 
@@ -41,16 +41,6 @@ const boardService = {
   async updateBoard(id, data) {
     const response = await api.put(`/boards/${id}/`, data);
     return response.data;
-  },
-
-  /**
-   * Usuń tablicę
-   * @param {number} id ID tablicy
-   * @returns {Promise} Status odpowiedzi
-   */
-  async deleteBoard(id) {
-    await api.delete(`/boards/${id}/`);
-    return true;
   },
 
   /**
